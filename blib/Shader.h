@@ -15,8 +15,8 @@ namespace blib
 	{
 	public:
 		std::map<std::string, int> attributes;
-		std::string vertexShader;
-		std::string fragmentShader;
+		std::vector<std::string> vertexShaders;
+		std::vector<std::string> fragmentShaders;
 		enum UniformType
 		{
 			Float,
@@ -265,7 +265,8 @@ namespace blib
 		inline void setUniform(Enum name,			const T& value)
 		{
 			assert(uniformData);
-			uniforms[(int)name]->set(uniformData, value);
+			if (uniforms[(int)name])
+				uniforms[(int)name]->set(uniformData, value);
 		}
 		template <class T, class Enum>
 		inline T getUniform(Enum name)
@@ -287,7 +288,7 @@ namespace blib
 		virtual void initFromData(std::string vertexShader, std::string fragmentShader);
 		virtual void bindAttributeLocation(std::string name, int index);
 		void finishUniformSetup();
-
+		virtual void addVertexShader(const std::string &fileName);
 
 		virtual void setState(char* state);
 	protected:

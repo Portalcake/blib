@@ -21,7 +21,7 @@ namespace blib
 {
 
 VertexDef(VertexP3,								position,	glm::vec3, 3, Vertex)
-//VertexDef(VertexP2,								position,	glm::vec2, 2, Vertex)
+VertexDef(VertexP2,								position,	glm::vec2, 2, Vertex)
 VertexDef(VertexP3T2,							texCoord,	glm::vec2, 2, VertexP3)
 VertexDef(VertexP3N3,							normal,		glm::vec3, 3, VertexP3)
 VertexDef(VertexP3T2N3,							normal,		glm::vec3, 3, VertexP3T2)
@@ -43,12 +43,13 @@ VertexDef(VertexP2T2C4,							color,		glm::vec4, 4, VertexP2T2)
 VertexDef(VertexP2C4T2,							tex1,		glm::vec2, 2, VertexP2C4)
 VertexDef(VertexP2C4T2T2,						tex2,		glm::vec2, 2, VertexP2C4T2)
 VertexDef(VertexP2C4T2T2F1,						_size,		float, 1, VertexP2C4T2T2)
+VertexDef(VertexP3N3C4,							color,		glm::vec4, 4, VertexP3N3)
 
 #ifndef BLIB_IOS
 VertexDefi(VertexP3T2N3B4,						boneIds,	glm::ivec4,4, VertexP3T2N3)
 VertexDef(VertexP3T2N3B4B4,						boneWeights,glm::vec4,4, VertexP3T2N3B4)
 #endif
-
+/*
 
 	void VertexP2::setAttribPointers(bool enabledVertexAttributes[10], void* offset, int *index, int totalSize) \
 	{
@@ -81,5 +82,38 @@ VertexDef(VertexP3T2N3B4B4,						boneWeights,glm::vec4,4, VertexP3T2N3B4)
 		}
 	}
 	int VertexP2::size() { return Vertex::size() + 2*sizeof(GL_FLOAT); }\
+
+		
+	void VertexP3::setAttribPointers(bool enabledVertexAttributes[10], void* offset, int *index, int totalSize) \
+	{
+#ifdef __glew_h__
+		if (!glEnableVertexAttribArray) //wtf
+			glewInit();
+#endif
+		int tmpIndex = 0;
+		if (!index)
+			index = &tmpIndex;
+		Vertex::setAttribPointers(enabledVertexAttributes, offset, index, totalSize);
+		if (!enabledVertexAttributes[*index] && glEnableVertexAttribArray)
+			glEnableVertexAttribArray(*index);
+		enabledVertexAttributes[*index] = true;
+
+		//	int parentSize = Vertex::size();
+
+		//if (glVertexAttribPointer)
+			glVertexAttribPointer((*index)++, 3, GL_FLOAT, GL_FALSE, totalSize, (void*)((char*)offset));
+
+		if (index == &tmpIndex)
+		{
+			for (int i = *index; i < 10; i++)
+				if (enabledVertexAttributes[i])
+				{
+					enabledVertexAttributes[i] = false;
+					//					if (glDisableVertexAttribArray)
+					glDisableVertexAttribArray(i);
+				}
+		}
+	}
+	int VertexP3::size() { return Vertex::size() + 3 * sizeof(GL_FLOAT); }*/
 
 }

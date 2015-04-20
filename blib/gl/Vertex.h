@@ -35,7 +35,9 @@ namespace blib
 #define VertexDef(className, memberName, memberType, count, base)	\
 	void className::setAttribPointers(bool enabledVertexAttributes[10], void* offset, int *index, int totalSize) \
 {\
-	int tmpIndex = 0;\
+	if (!glEnableVertexAttribArray)\
+		glewInit();\
+	int tmpIndex = 0; \
 	if(!index)\
 	index = &tmpIndex;\
 	base::setAttribPointers(enabledVertexAttributes, offset, index, totalSize);\
@@ -61,7 +63,7 @@ namespace blib
 #define VertexDefi(className, memberName, memberType, count, base)	\
 	void className::setAttribPointers(bool enabledVertexAttributes[10], void* offset, int *index, int totalSize) \
 {\
-	int tmpIndex = 0;\
+	int tmpIndex = 0; \
 	if(!index)\
 	index = &tmpIndex;\
 	base::setAttribPointers(enabledVertexAttributes, offset, index, totalSize);\
@@ -199,6 +201,9 @@ VertexDefBegin(VertexP3T2N3B4B4, boneWeights, glm::vec4, 4, VertexP3T2N3B4)
 VertexDefEnd();
 
 
+VertexDefBegin(VertexP3N3C4, color, glm::vec4, 4, VertexP3N3)
+VertexP3N3C4(glm::vec3 position, glm::vec3 normal, glm::vec4 color) : VertexP3N3(position, normal), color(color) {};
+VertexDefEnd();
 
 }
 #endif

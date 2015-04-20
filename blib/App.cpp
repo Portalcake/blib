@@ -1,9 +1,8 @@
 #ifndef WIN32
 #pragma GCC diagnostic ignored "-Wmissing-braces"
 #else
-#include <gl/glew.h>
+#include <gl/glew.h> // for vsync
 #endif
-
 
 #include "App.h"
 #include <glm/gtc/matrix_transform.hpp>
@@ -266,9 +265,22 @@ namespace blib
 				bool onMouseDown(int x, int y, Button button, int clickCount)	{ app->mouseState.clickcount = clickCount; app->mouseState.position.x = x; app->mouseState.position.y = y; app->mouseState.buttons[button == MouseListener::Left ? 0 : (button == MouseListener::Middle ? 1 : 2)] = true; return false; };
 				bool onMouseUp(int x, int y, Button button, int clickCount)		{ app->mouseState.clickcount = clickCount; app->mouseState.position.x = x; app->mouseState.position.y = y; app->mouseState.buttons[button == MouseListener::Left ? 0 : (button == MouseListener::Middle ? 1 : 2)] = false; return false; };
 				bool onMouseMove(int x, int y, Buttons button)					{ app->mouseState.position.x = x; app->mouseState.position.y = y; return false; };
+				bool onScroll(int delta) { app->mouseState.scrollPosition += delta; return false; };
 			};
 			addMouseListener(new AppMouseListener(this));
 		}
+
+		class Resizer : public blib::gl::GlResizeRegister
+		{
+			App* app;
+		public:
+			Resizer(App* app) { this->app = app; }
+			void resizeGl(int width, int height)
+			{
+				app->renderer->setViewPort(0, 0, width, height);
+			}
+		};
+		new Resizer(this);
 
 		mouseState.leftButton = false;
 		mouseState.rightButton = false;
@@ -429,7 +441,7 @@ namespace blib
 					app->joyStates[i] = app->joystickDriver->getJoyState(i);
 			}
 
-			app->renderer->setViewPort(app->window->getWidth(), app->window->getHeight());
+			app->renderer->setViewPort(0,0,app->window->getWidth(), app->window->getHeight());
 			double elapsedTime = blib::util::Profiler::getTime();
 			blib::util::Profiler::startFrame();
 			app->time += elapsedTime;
