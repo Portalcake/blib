@@ -68,6 +68,7 @@ namespace blib
 
 			if (depthTexture)
 			{
+#ifdef BLIB_WIN
 				glGenTextures(1, &texids[textureCount]);
 				glBindTexture(GL_TEXTURE_2D, texids[textureCount]);
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
@@ -80,6 +81,7 @@ namespace blib
 
 				glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0);
 				glDrawBuffer(GL_NONE); // No color buffer is drawn to.
+#endif
 
 			}
 
@@ -88,7 +90,11 @@ namespace blib
 				glGenRenderbuffers(1, &depthBuffer);
 				glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
 #if defined(BLIB_ANDROID) || defined(BLIB_IOS)
-				glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height);
+				if(stencil)
+					glRenderbufferStorage( GL_RENDERBUFFER, GL_STENCIL_INDEX8, width, height);
+				else if (depth)
+					glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height);
+
 #else
 				if(depth && !stencil)
 					glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
