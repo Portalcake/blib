@@ -32,13 +32,11 @@ namespace blib
 
 		Shader::~Shader(void)
 		{
-			glDeleteProgram(programId);
-	
+			if(programId != 0)
+				glDeleteProgram(programId);
 			for(std::list<SubShader*>::iterator it = shaders.begin(); it != shaders.end(); it++)
 				delete (*it);
 			shaders.clear();
-	
-	
 		}
 		
 
@@ -85,7 +83,7 @@ namespace blib
 					glGetActiveUniform(programId, GLuint(i), sizeof(name) - 1,
 						&name_len, &num, &type, name);
 					name[name_len] = 0;
-					Log::out << "Found uniform " << name << Log::newline;
+					//Log::out << "Found uniform " << name << Log::newline;
 				}
 
 				glUseProgram(programId);
@@ -202,7 +200,7 @@ namespace blib
 
 		Shader::SubShader::~SubShader()
 		{
-			glDeleteShader(shaderId);
+			//glDeleteShader(shaderId);
 		}
 
 		void Shader::SubShader::attach(GLuint programId)

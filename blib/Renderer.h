@@ -8,6 +8,7 @@
 #include <blib/Util.h>
 #include <blib/util/ListAllocator.h>
 #include <blib/util/Thread.h>
+#include <blib/gl/VBO.h> // uhoh
 #include <vector>
 
 #include <blib/config.h>
@@ -52,6 +53,8 @@ namespace blib
 				SetSubTexture,
 				SetViewPort,
 				Unproject,
+				SaveFbo,
+				SetVboSub,
 			} command;
 			Render()
 			{
@@ -113,6 +116,7 @@ namespace blib
 			VBO* vbo;
 			int vertexStart;
 			int count;
+			bool empty;
 
 			virtual void setVertexAttributes(bool enabledVertices[10], float* firstVertex)
 			{
@@ -125,10 +129,36 @@ namespace blib
 			virtual ~RenderSetVbo() { };
 			virtual void perform(float* firstVertex)
 			{
-				vbo->setData(count, (T*)(firstVertex + vertexStart));
+				if(empty)
+					vbo->setData(count, NULL);
+				else
+					vbo->setData(count, (T*)(firstVertex + vertexStart));
 			}
 		};
 
+		template <class T>
+		class RenderSetVboSub : public Render
+		{
+		public:
+			VBO* vbo;
+			int vertexStart;
+			int count;
+			int position;
+
+			virtual void setVertexAttributes(bool enabledVertices[10], float* firstVertex)
+			{
+			}
+			virtual int vertexCount()
+			{
+				//	return vertices.size();
+				return 0;
+			}
+			virtual ~RenderSetVboSub() { };
+			virtual void perform(float* firstVertex)
+			{
+				vbo->setSubData(position, count, (T*)(firstVertex + vertexStart));
+			}
+		};
 		template <class T>
 		class RenderSetVio : public Render
 		{
@@ -201,6 +231,16 @@ namespace blib
 
 		};
 
+		class RenderSaveFbo : public Render
+		{
+		public:
+			FBO* fbo;
+			std::string filename;
+
+			virtual void setVertexAttributes(bool enabledVertices[10], float* firstVertex)			{			}
+			virtual int vertexCount()			{ return 0; }
+		};
+
 
 
 		int activeLayer;
@@ -224,11 +264,11 @@ namespace blib
 		{
 			activeLayer = 0;
 #ifdef _DEBUG
-			vertices[0] = new float[1024*1024*50]; // 50M floats
-			vertices[1] = new float[1024*1024*50]; // 50M floats
+			vertices[0] = new float[1024*1024*25]; // 50M floats
+			vertices[1] = new float[1024*1024*25]; // 50M floats
 #else
-			vertices[0] = new float[1024 * 1024 * 50]; // 50M floats
-			vertices[1] = new float[1024 * 1024 * 50]; // 50M floats
+			vertices[0] = new float[1024 * 1024 * 25]; // 50M floats
+			vertices[1] = new float[1024 * 1024 * 25]; // 50M floats
 #endif
 			vertexIndex[0] = 0;
 			vertexIndex[1] = 0;
@@ -381,6 +421,54 @@ namespace blib
 				memcpy(this->vertices[activeLayer]+vertexIndex[activeLayer], &vertices[0], sizeof(T) * vertices.size());
 			vertexIndex[activeLayer] += (sizeof(T) / sizeof(float)) * vertices.size();
 			block->vbo = vbo;
+			((blib::gl::VBO*)vbo)->length = vertices.size();
+			toRender[activeLayer].push_back(block);
+		}
+
+
+
+		template<class T>
+		void setVbo(VBO* vbo, T* vertices, int count)
+		{
+			//assert(blib::util::Thread::getCurrentThreadName() == "UpdateThread");
+#ifdef CUSTOMMEMALLOCATOR
+			RenderSetVbo<T>* block = allocators[activeLayer].get<RenderSetVbo<T>>(); //new RenderSetVbo<T>();
+#else
+			RenderSetVbo<T>* block = new RenderSetVbo<T>();
+#endif
+			block->command = Render::SetVbo;	//TODO : move to constructor
+			block->vertexStart = vertexIndex[activeLayer];
+			block->count = count;
+			if (count > 0 && vertices != NULL)
+			{
+				memcpy(this->vertices[activeLayer] + vertexIndex[activeLayer], vertices, sizeof(T) * count);
+				vertexIndex[activeLayer] += (sizeof(T) / sizeof(float)) * count;
+			}
+			
+			block->empty = vertices == NULL;
+			block->vbo = vbo;
+		//	((blib::gl::VBO*)vbo)->length = count;
+			toRender[activeLayer].push_back(block);
+		}
+
+
+		template<class T>
+		void setVboSub(VBO* vbo, int position, T* vertices, int count)
+		{
+			//assert(blib::util::Thread::getCurrentThreadName() == "UpdateThread");
+#ifdef CUSTOMMEMALLOCATOR
+			RenderSetVboSub<T>* block = allocators[activeLayer].get<RenderSetVboSub<T>>(); //new RenderSetVbo<T>();
+#else
+			RenderSetVboSub<T>* block = new RenderSetVboSub<T>();
+#endif
+			block->command = Render::SetVboSub;	//TODO : move to constructor
+			block->position = position;
+			block->vertexStart = vertexIndex[activeLayer];
+			block->count = count;
+			if (count > 0)
+				memcpy(this->vertices[activeLayer] + vertexIndex[activeLayer], vertices, sizeof(T) * count);
+			vertexIndex[activeLayer] += (sizeof(T) / sizeof(float)) * count;
+			block->vbo = vbo;
 			toRender[activeLayer].push_back(block);
 		}
 
@@ -433,6 +521,24 @@ namespace blib
 #else
 			RenderBlock<T>* block = new RenderBlock<T>();
 #endif
+			block->command = Render::DrawLines;	//TODO : move to constructor
+			block->vertexStart = 0;
+			block->count = count;
+			block->renderState = renderState;
+			memcpy(block->shaderState, renderState.activeShader->uniformData, renderState.activeShader->uniformSize);
+			toRender[activeLayer].push_back(block);
+		}
+
+		template<class T>
+		void drawLines(int count, float thickness, const RenderState& renderState)
+		{
+			//assert(blib::util::Thread::getCurrentThreadName() == "UpdateThread");
+#ifdef CUSTOMMEMALLOCATOR
+			RenderBlock<T>* block = allocators[activeLayer].get<RenderBlock<T>>(); //new RenderBlock<T>();
+#else
+			RenderBlock<T>* block = new RenderBlock<T>();
+#endif
+			block->lineThickness = thickness;
 			block->command = Render::DrawLines;	//TODO : move to constructor
 			block->vertexStart = 0;
 			block->count = count;
@@ -550,6 +656,21 @@ namespace blib
 			command->modelMatrix = modelMatrix;
 			command->projectionMatrix = projectionMatrix;
 
+			toRender[activeLayer].push_back(command);
+		}
+
+
+		void saveFbo(FBO* fbo, std::string filename)
+		{
+			//assert(blib::util::Thread::getCurrentThreadName() == "UpdateThread");
+#ifdef CUSTOMMEMALLOCATOR
+			RenderSaveFbo* command = allocators[activeLayer].get<RenderSaveFbo>();
+#else
+			RenderSaveFbo* command = new RenderSaveFbo();
+#endif
+			command->command = Render::SaveFbo;
+			command->fbo = fbo;
+			command->filename = filename;
 			toRender[activeLayer].push_back(command);
 		}
 

@@ -28,10 +28,12 @@ namespace blib
 		{
 		private:
 			GLuint vbo;
-			int length;
 		public:
+			int length;
+
 			VBO()
 			{
+				name = "VBO";
 				length = 0;
 				vbo = 0;
 			}
@@ -47,18 +49,21 @@ namespace blib
 					glGenBuffers(1, &vbo);
 			}
 
-			void setData(int length, void* data)
+			void setData(int len, void* data)
 			{
 				assert(elementSize);
-				this->length = length;
+				this->length = len;
 				bind();
-				glBufferData(GL_ARRAY_BUFFER, elementSize() * length, data, GL_STATIC_DRAW);
+				assert(vbo != 0);
+				glBufferData(GL_ARRAY_BUFFER, elementSize() * length, data, GL_DYNAMIC_DRAW);
 			}
 
-			void setSubData(int offset, int length, void* data)
+			void setSubData(int offset, int len, void* data)
 			{
 				bind();
-				glBufferSubData(GL_ARRAY_BUFFER, elementSize() * offset, elementSize() * length, data);
+				assert(vbo != 0);
+				assert(length != 0);
+				glBufferSubData(GL_ARRAY_BUFFER, elementSize() * offset, elementSize() * len, data);
 			}
 
 

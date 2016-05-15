@@ -1,7 +1,7 @@
 #ifndef __VERTEX_H__
 #define __VERTEX_H__
 
-
+#include <blib/config.h>
 #include <glm/glm.hpp>
 
 namespace blib
@@ -57,7 +57,15 @@ namespace blib
 }\
 	int className::size() { return base::size() + count*sizeof(GL_FLOAT); }\
 
+#ifdef BLIB_ANDROID
+#define VertexDefi(className, memberName, memberType, count, base)	\
+	void className::setAttribPointers(bool enabledVertexAttributes[10], void* offset, int *index, int totalSize) \
+	{\
+\
+	} \
+	int className::size() { return base::size() + count*sizeof(GL_INT); }
 
+#else
 #define VertexDefi(className, memberName, memberType, count, base)	\
 	void className::setAttribPointers(bool enabledVertexAttributes[10], void* offset, int *index, int totalSize) \
 {\
@@ -84,7 +92,7 @@ namespace blib
 	int className::size() { return base::size() + count*sizeof(GL_INT); }\
 
 
-
+#endif
 
 
 
@@ -188,6 +196,9 @@ VertexDefBegin(VertexP2T2C4,								color,		glm::vec4, 4, VertexP2T2)
 	VertexP2T2C4(glm::vec2 position, glm::vec2 texCoord, glm::vec4 color) : VertexP2T2(position, texCoord), color(color) {};
 VertexDefEnd();
 
+VertexDefBegin(VertexP2T2C4C4, colorOverlay, glm::vec4, 4, VertexP2T2C4)
+VertexP2T2C4C4(glm::vec2 position, glm::vec2 texCoord, glm::vec4 color, glm::vec4 colorOverlay) : VertexP2T2C4(position, texCoord, color), colorOverlay(colorOverlay) {};
+VertexDefEnd();
 
 
 VertexDefBegin(VertexP3T2N3B4, boneIds, glm::ivec4, 4, VertexP3T2N3)
@@ -202,6 +213,24 @@ VertexDefEnd();
 VertexDefBegin(VertexP3N3C4, color, glm::vec4, 4, VertexP3N3)
 VertexP3N3C4(glm::vec3 position, glm::vec3 normal, glm::vec4 color) : VertexP3N3(position, normal), color(color) {};
 VertexDefEnd();
+
+
+
+
+VertexDefBegin(VertexP2T2C4P2, position2, glm::vec2, 2, VertexP2T2C4)
+VertexP2T2C4P2(glm::vec2 position, glm::vec2 texture, glm::vec4 color, glm::vec2 position2) : VertexP2T2C4(position, texture, color), position2(position2) {};
+VertexDefEnd();
+
+VertexDefBegin(VertexP2T2C4P2R1, rotation, float, 1, VertexP2T2C4P2)
+VertexP2T2C4P2R1(glm::vec2 position, glm::vec2 texture, glm::vec4 color, glm::vec2 position2, float rotation) : VertexP2T2C4P2(position, texture, color, position2), rotation(rotation) {};
+VertexDefEnd();
+
+VertexDefBegin(VertexP2T2C4P2R1S1, scale, float, 1, VertexP2T2C4P2R1)
+VertexP2T2C4P2R1S1(glm::vec2 position, glm::vec2 texture, glm::vec4 color, glm::vec2 position2, float rotation, float scale) : VertexP2T2C4P2R1(position, texture, color, position2, rotation), scale(scale) {};
+VertexDefEnd();
+
+
+
 
 }
 #endif

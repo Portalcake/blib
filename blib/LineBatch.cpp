@@ -37,11 +37,17 @@ namespace blib
 		verts.reserve(1000000);
 	}
 
+	LineBatch::~LineBatch()
+	{
+		blib::ResourceManager::getInstance().dispose(vbo);
+		blib::ResourceManager::getInstance().dispose(shader);
+	}
 
-	void LineBatch::begin(glm::mat4 matrix)
+	void LineBatch::begin(const glm::mat4 &matrix, float thickness)
 	{
 		assert(!active);
 		active = true;
+		this->thickness = thickness;
 		this->matrix = matrix;
 		verts.clear();
 	}
@@ -57,7 +63,7 @@ namespace blib
 
 		renderer->setVbo(vbo, verts);
 		renderState.activeShader->setUniform(Uniforms::matrix, matrix);
-		renderer->drawLines<vertexDef>(verts.size(), renderState);
+		renderer->drawLines<vertexDef>(verts.size(), thickness, renderState);
 	}
 
 
@@ -96,4 +102,42 @@ namespace blib
 	{
 		renderState.activeShader->setUniform(Uniforms::projectionMatrix, glm::ortho(0.0f, (float)width, (float)height, 0.0f, -1000.0f, 1.0f));
 	}
+
+
+	void LineBatch::startCache()
+	{
+		assert(active);
+		assert(!cacheActive);
+		cacheActive = true;
+		cacheStart = verts.size();
+	}
+
+	LineBatch::Cache* LineBatch::getCache()
+	{
+		assert(cacheActive);
+		assert(active);
+		cacheActive = false;
+
+		Cache* cache = new Cache();
+		if (cacheStart == verts.size())
+		{
+			return cache;
+		}
+
+		cache->verts.insert(cache->verts.begin(), verts.begin() + cacheStart, verts.end());
+		return cache;
+	}
+
+
+	void LineBatch::drawCache(Cache* cache)
+	{
+		assert(active);
+		if (cache->verts.empty())
+			return;
+		size_t currentSize = verts.size();
+		verts.insert(verts.end(), cache->verts.begin(), cache->verts.end());
+	}
+
+
+
 }

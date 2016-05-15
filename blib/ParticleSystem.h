@@ -7,8 +7,10 @@
 #include <blib/TextureMap.h>
 #include <blib/gl/GlResizeRegister.h>
 #include <blib/gl/Vertex.h>
+#include <blib/VBO.h>
+#include <blib/VIO.h>
 
-#define MAX_PARTICLES 50000
+#define MAX_PARTICLES 10000
 
 namespace blib
 {
@@ -21,6 +23,8 @@ namespace blib
 	class TextureMap;
 
 
+	typedef VertexP2T2C4P2R1S1 VertexDef;
+
 	class Particle
 	{
 	public:
@@ -30,8 +34,9 @@ namespace blib
 		float lifeDec;
 		TextureMap::TexInfo* texture;
 		float rotationSpeed;
+		float rotation;
 
-		VertexP2C4T2T2F1 vertex;
+		VertexDef *vertex;
 		Particle()
 		{
 			life = 1;
@@ -49,6 +54,9 @@ namespace blib
 
 		double counter;
 		double life;
+		int lastTextureSelected;
+
+		bool enabled;
 
 		Emitter(EmitterTemplate* emitterTemplate);
 		void newParticle(Particle& particle, double elapsedTime);
@@ -74,6 +82,7 @@ namespace blib
 		enum TextureOrder
 		{
 			Random,
+			Ordered,
 		} textureOrder;
 
 		enum BlendMode
@@ -94,6 +103,8 @@ namespace blib
 		int particleCountPerSecondMin;
 		int particleCountPerSecondMax;
 
+		glm::vec2 initialSpreadX;
+		glm::vec2 initialSpreadY;
 
 		struct ParticleProps
 		{
@@ -105,6 +116,9 @@ namespace blib
 
 			float rotationMin;
 			float rotationMax;
+
+			float rotationSpeedMin;
+			float rotationSpeedMax;
 
 			float friction;
 			float rotationFriction;
@@ -121,6 +135,7 @@ namespace blib
 
 	class ParticleSystem : public gl::GlResizeRegister
 	{
+        std::map<std::string, EmitterTemplate*> cache;
 		std::string textureFolder;
 		double lastElapsedTime;
 		Renderer* renderer;
@@ -133,21 +148,30 @@ namespace blib
 			{
 				s_texture,
 				projectionmatrix,
+				matrix,
 			};
 		};
 
-		RenderState renderState;
 		std::list<Emitter*> emitters;
 		TextureMap* textureMap;
 	public:
+		RenderState renderState;
+
 		ParticleSystem(Renderer* renderer, ResourceManager* resourceManager, SpriteBatch* spriteBatch);
 		~ParticleSystem();
 		void update(double elapsedTime);
+		void updateParticles(Particle* particles, int& nParticles, double elapsedTime);
 		void draw(glm::mat4 matrix);
 
 
-		Particle particles[MAX_PARTICLES];
-		int nParticles;
+		Particle alphaParticles[MAX_PARTICLES];
+		int nParticlesAlpha;
+		Particle addParticles[MAX_PARTICLES];
+		int nParticlesAdd;
+
+		VertexDef* particleData;
+		blib::VBO* vbo;
+		blib::VIO* vio;
 
 		void clear();
 		Emitter* addEmitter(std::string name);
@@ -155,6 +179,8 @@ namespace blib
 
 		Attractor* addAttractor();
 		void removeAttractor();
+
+		void preCache(std::string dir);
 
 		inline void setTextureFolder(const std::string &folder) { this->textureFolder = folder; }
 

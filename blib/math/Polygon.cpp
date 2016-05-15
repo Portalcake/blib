@@ -3,7 +3,12 @@
 #include "Rectangle.h"
 #include <limits>
 
+#include <blib/math/Triangle.h>
+#include <blib/util/Log.h>
 #include <poly2tri/poly2tri.h>
+#include <clipper/clipper.hpp>
+
+using blib::util::Log;
 
 namespace blib
 {
@@ -126,8 +131,11 @@ namespace blib
 			return ret;		
 		}
 
+		//TODO: unsure if this works for concave polygons properly. also check http://alienryderflex.com/polygon/
 		bool Polygon::contains(glm::vec2 point) const
 		{
+			if (size() < 3)
+				return false;
 			//http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
 			int i, j, c = 0;
 			for (i = 0, j = (int)size() - 1; i < (int)size(); j = i++) {
@@ -143,7 +151,7 @@ namespace blib
 			float minDist = 9999;
 			glm::vec2 closestPoint;
 
-			for (int i = 0; i < size(); i++)
+			for (size_t i = 0; i < size(); i++)
 			{
 				blib::math::Line line(at(i), at((i + 1) % size()));
 				glm::vec2 p = line.project(position);
@@ -155,6 +163,96 @@ namespace blib
 				}
 			}
 			return closestPoint;
+		}
+
+		bool Polygon::isConvex()
+		{
+			bool result;
+			for (int i = 0; i < size(); i++)
+			{
+				int j = (i + 1) % size();
+				int k = (i + 2) % size();
+
+				float z = (at(j).x - at(i).x) * (at(k).y - at(j).y);
+				z -= (at(j).y - at(i).y) * (at(k).x - at(j).x);;
+
+				if (i == 0)
+					result = std::signbit(z);
+				if (std::signbit(z) != result)
+					return false;
+			}
+			return true;
+		}
+
+
+
+		void Polygon::add(const Triangle2 &triangle)
+		{//TODO : make this without clipper...
+			ClipperLib::Clipper clipper;
+
+			ClipperLib::Polygon thisPoly;
+			for (size_t i = 0; i < size(); i++)
+				thisPoly.push_back(at(i));
+			clipper.AddPolygon(thisPoly, ClipperLib::ptSubject);
+
+			ClipperLib::Polygon otherPoly;
+			otherPoly.push_back(triangle.v1);
+			otherPoly.push_back(triangle.v2);
+			otherPoly.push_back(triangle.v3);
+			clipper.AddPolygon(otherPoly, ClipperLib::ptClip);
+
+			ClipperLib::Polygons res;
+			clipper.Execute(ClipperLib::ctUnion, res);
+			assert(res.size() == 1);
+
+			clear();
+			for (size_t i = 0; i < res[0].size(); i++)
+				push_back(res[0][i]);
+		}
+
+
+		void Polygon::intersect(const Polygon& other)
+		{//TODO : make this without clipper...
+			ClipperLib::Clipper clipper;
+
+			ClipperLib::Polygon thisPoly;
+			for (size_t i = 0; i < size(); i++)
+				thisPoly.push_back(at(i));
+			clipper.AddPolygon(thisPoly, ClipperLib::ptSubject);
+
+			ClipperLib::Polygon otherPoly;
+			for (size_t i = 0; i < other.size(); i++)
+				otherPoly.push_back(other[i]);
+			clipper.AddPolygon(otherPoly, ClipperLib::ptClip);
+
+			ClipperLib::Polygons res;
+			clipper.Execute(ClipperLib::ctIntersection, res);
+			clear();
+
+			if (res.size() == 1)
+			{
+				for (size_t i = 0; i < res[0].size(); i++)
+					push_back(res[0][i]);
+			}
+		}
+
+
+		glm::vec2 Polygon::getCenter() const
+		{
+			glm::vec2 center;
+			for (const glm::vec2 &v : *this)
+				center += v;
+			center /= (float)size();
+			return center;
+		}
+
+		const Polygon Polygon::expand(float amount) const
+		{
+			glm::vec2 center = getCenter();
+			Polygon ret;
+			for (size_t i = 0; i < size(); i++)
+				ret.push_back(at(i) + amount * glm::normalize(center - at(i)));
+			return ret;
 		}
 
 	}

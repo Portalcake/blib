@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 #include <blib/TextureMap.h>
 #include <vector>
-
 class b2Body;
 
 namespace blib
@@ -35,6 +34,11 @@ namespace blib
 		glm::mat4 easyMatrix(const Texture* texture, const blib::math::Rectangle &rect);
 		glm::mat4 easyMatrix(const Texture* texture, const blib::math::Rectangle &rect, glm::vec2 pivot, float rotation);
 		glm::mat4 easyMatrix(const TextureMap::TexInfo* texture, const blib::math::Rectangle &rect);
+
+
+		glm::vec2 fromAngle(float angle);
+		float wrapAngleRad(float angle);
+		float wrapAngleDeg(float angle);
 
 
 		template<class T>

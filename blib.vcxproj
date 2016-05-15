@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -29,7 +29,6 @@
     <ClInclude Include="blib\FBO.h" />
     <ClInclude Include="blib\Font.h" />
     <ClInclude Include="blib\gl\Camera.h" />
-    <ClInclude Include="blib\gl\direct\ResourceManager.h" />
     <ClInclude Include="blib\gl\FBO.h" />
     <ClInclude Include="blib\gl\GlResizeRegister.h" />
     <ClInclude Include="blib\gl\Renderer.h" />
@@ -65,6 +64,7 @@
     <ClInclude Include="blib\math\Rectangle.h" />
     <ClInclude Include="blib\math\Triangle.h" />
     <ClInclude Include="blib\MouseListener.h" />
+    <ClInclude Include="blib\NavMesh.h" />
     <ClInclude Include="blib\ParticleSystem.h" />
     <ClInclude Include="blib\platform\win32\config.h" />
     <ClInclude Include="blib\platform\win32\Registry.h" />
@@ -76,6 +76,7 @@
     <ClInclude Include="blib\Shader.h" />
     <ClInclude Include="blib\Shapes.h" />
     <ClInclude Include="blib\SkelAnimatedModel.h" />
+    <ClInclude Include="blib\SpineModel.h" />
     <ClInclude Include="blib\SpriteBatch.h" />
     <ClInclude Include="blib\SpriteSheet.h" />
     <ClInclude Include="blib\StaticModel.h" />
@@ -95,6 +96,8 @@
     <ClInclude Include="blib\util\Singleton.h" />
     <ClInclude Include="blib\util\stb_image.h" />
     <ClInclude Include="blib\util\stb_image_create.h" />
+    <ClInclude Include="blib\util\stb_perlin.h" />
+    <ClInclude Include="blib\util\stb_vorbis.h" />
     <ClInclude Include="blib\util\Stream.h" />
     <ClInclude Include="blib\util\StreamIn.h" />
     <ClInclude Include="blib\util\StreamInFile.h" />
@@ -461,6 +464,7 @@
     <ClInclude Include="externals\poly2tri\sweep\cdt.h" />
     <ClInclude Include="externals\poly2tri\sweep\sweep.h" />
     <ClInclude Include="externals\poly2tri\sweep\sweep_context.h" />
+    <ClInclude Include="externals\spine\spine-c\src\spine\Json.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="blib\AnimatableSprite.cpp" />
@@ -475,7 +479,6 @@
     <ClCompile Include="blib\drivers\joystick\DirectInput.cpp" />
     <ClCompile Include="blib\drivers\joystick\WinMM.cpp" />
     <ClCompile Include="blib\Font.cpp" />
-    <ClCompile Include="blib\gl\direct\ResourceManager.cpp" />
     <ClCompile Include="blib\gl\FBO.cpp" />
     <ClCompile Include="blib\gl\GlResizeRegister.cpp" />
     <ClCompile Include="blib\gl\Renderer.cpp" />
@@ -503,15 +506,18 @@
     <ClCompile Include="blib\math\Ray.cpp" />
     <ClCompile Include="blib\math\Rectangle.cpp" />
     <ClCompile Include="blib\math\Triangle.cpp" />
+    <ClCompile Include="blib\NavMesh.cpp" />
     <ClCompile Include="blib\ParticleSystem.cpp" />
     <ClCompile Include="blib\platform\win32\Registry.cpp" />
     <ClCompile Include="blib\platform\win32\window.cpp" />
     <ClCompile Include="blib\Renderer.cpp" />
     <ClCompile Include="blib\RenderState.cpp" />
+    <ClCompile Include="blib\Resource.cpp" />
     <ClCompile Include="blib\ResourceManager.cpp" />
     <ClCompile Include="blib\Shader.cpp" />
     <ClCompile Include="blib\Shapes.cpp" />
     <ClCompile Include="blib\SkelAnimatedModel.cpp" />
+    <ClCompile Include="blib\SpineModel.cpp" />
     <ClCompile Include="blib\SpriteBatch.cpp" />
     <ClCompile Include="blib\SpriteSheet.cpp" />
     <ClCompile Include="blib\StaticModel.cpp" />
@@ -526,6 +532,8 @@
     <ClCompile Include="blib\util\Signal.cpp" />
     <ClCompile Include="blib\util\stb_image.c" />
     <ClCompile Include="blib\util\stb_image_create.cpp" />
+    <ClCompile Include="blib\util\stb_perlin.cpp" />
+    <ClCompile Include="blib\util\stb_vorbis.c" />
     <ClCompile Include="blib\util\Stream.cpp" />
     <ClCompile Include="blib\util\StreamIn.cpp" />
     <ClCompile Include="blib\util\StreamInFile.cpp" />
@@ -752,6 +760,32 @@
     <ClCompile Include="externals\poly2tri\sweep\cdt.cc" />
     <ClCompile Include="externals\poly2tri\sweep\sweep.cc" />
     <ClCompile Include="externals\poly2tri\sweep\sweep_context.cc" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\Animation.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\AnimationState.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\AnimationStateData.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\Atlas.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\AtlasAttachmentLoader.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\Attachment.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\AttachmentLoader.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\Bone.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\BoneData.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\BoundingBoxAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\Event.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\EventData.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\extension.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\IkConstraint.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\IkConstraintData.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\Json.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\MeshAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\RegionAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\Skeleton.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\SkeletonBounds.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\SkeletonData.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\SkeletonJson.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\Skin.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\SkinnedMeshAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\Slot.c" />
+    <ClCompile Include="externals\spine\spine-c\src\spine\SlotData.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="externals\glew\doc\credits.html" />
@@ -765,12 +799,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
@@ -798,7 +832,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)\%(RelativeDir)\</ObjectFileName>
-      <AdditionalIncludeDirectories>.;externals\glew\include;externals;externals\box2d;externals\bullet3\src;externals\openal\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;externals\glew\include;externals;externals\box2d;externals\bullet3\src;externals\openal\include;externals\spine\spine-c\include</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -810,7 +844,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>opengl32.lib;glew32s.lib;winmm.lib;dinput8.lib;dxguid.lib;OpenAL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)\externals\glew\lib;$(ProjectDir)\externals\openal\libs</AdditionalLibraryDirectories>
     </Lib>
     <PreBuildEvent>
@@ -828,7 +862,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;WIN32;NDEBUG;_LIB;GLEW_STATIC;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)\%(RelativeDir)\</ObjectFileName>
-      <AdditionalIncludeDirectories>.;externals\glew\include;externals;externals\box2d;externals\bullet3\src;externals\openal\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;externals\glew\include;externals;externals\box2d;externals\bullet3\src;externals\openal\include;externals\spine\spine-c\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -839,8 +873,8 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <Lib>
-      <AdditionalDependencies>opengl32.lib;glew32s.lib;winmm.lib;dinput8.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)\externals\glew\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)\externals\glew\lib;$(ProjectDir)\externals\openal\libs</AdditionalLibraryDirectories>
     </Lib>
     <PreBuildEvent>
       <Command>

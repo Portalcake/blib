@@ -11,7 +11,7 @@ using blib::util::Log;
 
 namespace blib
 {
-	std::map<std::string, blib::Texture*> Texture::textureCache;
+	/*std::map<std::string, blib::Texture*> Texture::textureCache;
 	std::map<blib::Texture*, int> Texture::textureUseCount;
 
 
@@ -29,15 +29,16 @@ namespace blib
 	{
 		textureUseCount[this]--;
 		
-	}
+	}*/
 
-
+    
 	namespace gl
 	{
 
 		template <class T>
 		Texture<T>::Texture()
 		{
+            compressed = false;
 			this->texid = 0;
 			this->data = NULL;
 		}
@@ -45,6 +46,8 @@ namespace blib
 		template <class T>
 		Texture<T>::Texture(std::string fileName, int loadOptions)
 		{
+            compressed = false;
+			this->name = "Texture: " + fileName;
 			this->texid = 0;
 			this->data = NULL;
 			this->fileName = fileName;
@@ -56,13 +59,11 @@ namespace blib
 		template <class T>
 		Texture<T>::Texture(unsigned char* data, int width, int height)
 		{
+            compressed = false;
 			this->texid = 0;
 			this->data = data;
 			fromData(data, width, height);
 		}
-
-
-
 
 
 		template <class T>
@@ -70,15 +71,37 @@ namespace blib
 		{
 			T::loaded = false;
 			char* fileData = NULL;
-			int length = blib::util::FileSystem::getData(fileName, fileData);
-			if(length <= 0)
-			{
-				Log::err<<"Error loading texture '"<<fileName<<"'"<<Log::newline;
-				return;
-			}
-
+            int length = 0;
+            compressed = false;
+            
+#ifdef BLIB_IOS
+            if(blib::util::FileSystem::exists(fileName + ".pvrtc"))
+            {
+               // Log::out<<"Loading texture '"<<fileName<<".pvrtc'"<<Log::newline;
+                compressed = true;
+                compressedLength = blib::util::FileSystem::getData(fileName + ".pvrtc", fileData);
+                data = (unsigned char*)fileData;
+                
+                T::originalWidth = sqrt(compressedLength*2);
+                T::originalHeight = T::originalWidth;
+                T::width = T::originalWidth;
+                T::height = T::originalWidth;
+                //Log::out<<T::originalWidth<<Log::newline;
+                T::loaded = true;
+                return;
+            }
+            else
+#endif
+            {
+                length = blib::util::FileSystem::getData(fileName, fileData);
+            }
+            if(length <= 0)
+            {
+                Log::err<<"Error loading texture '"<<fileName<<"'"<<Log::newline;
+                return;
+            }
+            
 			int depth;
-
 			int &_originalWidth = T::originalWidth;
 			int &_originalHeight = T::originalHeight;
 
@@ -234,9 +257,19 @@ namespace blib
 					fromFile(T::fileName, 0);
 
 				glGenTextures(1, &texid);
-				glBindTexture(GL_TEXTURE_2D, texid);		
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, T::width, T::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-
+				glBindTexture(GL_TEXTURE_2D, texid);
+                if(compressed)
+                {
+#ifdef BLIB_IOS
+                    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG, T::width, T::height, 0, compressedLength, data);
+#else
+                    throw "oops";
+#endif
+                }
+                else
+                {
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, T::width, T::height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                }
 				if (T::nearest)
 				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -261,9 +294,9 @@ namespace blib
 				}
 
 
-				float aniso = 0.0f;
+			/*	float aniso = 0.0f;
 				glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);*/
 
 			/*	if((loadOptions & TextureWrap) == 0)
 				{

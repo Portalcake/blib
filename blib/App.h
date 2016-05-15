@@ -12,6 +12,14 @@
 
 #include <string.h> //memset
 
+
+#pragma comment(lib,"opengl32.lib")
+#pragma comment(lib,"glew32s.lib")
+#pragma comment(lib,"winmm.lib")
+#pragma comment(lib,"dinput8.lib")
+#pragma comment(lib,"dxguid.lib")
+#pragma comment(lib,"OpenAL32.lib")
+
 namespace blib
 {
 	enum class Key;
@@ -54,6 +62,7 @@ namespace blib
 	// Contains the state of the mouse on a moment in time
 	struct MouseState
 	{
+		static const unsigned char MaxTouches = 10;
 		union
 		{
 			bool buttons[3];
@@ -79,6 +88,14 @@ namespace blib
 			clickcount = 0;
 			scrollPosition = 0;
 		}
+	};
+	
+	struct Touch
+	{
+		unsigned long id;
+		glm::ivec2 position;
+		Touch() { id = 0; position.x = 0; position.y = 0; }
+		~Touch() {};
 	};
 
 	// the settings that are needed to set up the app. Changing these during runtime won't do a thing
@@ -193,6 +210,7 @@ namespace blib
 		bool running;
 		//the window interface to access the created window
 		Window* window;
+        Touch touches[10];
 
 		//method to run a method later, but in the updatethread
 		template<class T>
@@ -236,13 +254,24 @@ namespace blib
 		{
 			union
 			{
+				double data[10];
 				struct {
 					double updateTime;
 					double drawTime;
 					double fps;//everything should be double!
 				};
-				double data[3];
 			};
+			PerformanceInfo(double d)
+			{
+				for (int i = 0; i < 10; i++)
+					data[i] = d;
+			}
+			PerformanceInfo()
+			{
+				for (int i = 0; i < 10; i++)
+					data[i] = 0;
+			}
+
 		}frameTimes[1000];
 		int frameTimeIndex;
 
@@ -254,7 +283,13 @@ namespace blib
 
 	public:
 
+		void setProfileInfo(double d, int index)
+		{
+			frameTimes[frameTimeIndex].data[3 + index] = d;
+		}
+
 		bool showProfiler;
+		static int profilerCustomProps;
 	};
 
 

@@ -40,7 +40,7 @@ namespace blib
 			{
 			}
             
-            void Window::touchDownEvent(int x, int y)
+            void Window::touchDownEvent(unsigned long id, int x, int y)
             {
 				int clickCount = 1;
 				clicks.push_back(blib::util::tickcount());
@@ -53,21 +53,51 @@ namespace blib
 				if (clickCount < clicks.size())
 					clicks.erase(clicks.begin(), clicks.begin() + clicks.size() - clickCount);
 
-				
 				for(std::list<MouseListener*>::iterator it = mouseListeners.begin(); it != mouseListeners.end(); it++)
 					(*it)->onMouseDown(x, y, MouseListener::Left, clickCount);
+
+                for (Touch& t : app->touches)
+				{
+					if (t.id == 0)
+					{
+						t.id = id;
+						t.position.x = x;
+						t.position.y = y;
+						break;
+					}
+				}
             }
             
-            void Window::touchUpEvent(int x, int y)
+            void Window::touchUpEvent(unsigned long id, int x, int y)
             {
                 for(std::list<MouseListener*>::iterator it = mouseListeners.begin(); it != mouseListeners.end(); it++)
                     (*it)->onMouseUp(x,y,MouseListener::Left, 1);
-            }
-            void Window::touchMoveEvent(int x, int y)
+                for (Touch& t : app->touches)
+				{
+					if (t.id == id)
+					{
+						t.id = 0;
+						t.position.x = 0;
+						t.position.y = 0;
+						break;
+					}
+				}
+			}
+            void Window::touchMoveEvent(unsigned long id, int x, int y)
             {
                 for(std::list<MouseListener*>::iterator it = mouseListeners.begin(); it != mouseListeners.end(); it++)
                     (*it)->onMouseMove(x,y,MouseListener::Left);
-            }
+			
+                for (Touch& t : app->touches)
+				{
+					if (t.id == id)
+					{
+						t.position.x = x;
+						t.position.y = y;
+						break;
+					}
+				}
+			}
             
 		}
 	}

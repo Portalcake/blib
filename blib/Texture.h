@@ -29,7 +29,7 @@ namespace blib
 
 		glm::vec2 center;
 
-		static std::map<blib::Texture*, int> textureUseCount;
+		/*static std::map<blib::Texture*, int> textureUseCount;
 		static std::map<std::string, blib::Texture*> textureCache;
 		
 		template<class T>
@@ -37,11 +37,11 @@ namespace blib
 		{
 			if(textureCache.find(fileName) == textureCache.end())
 				textureCache[fileName] = new T(fileName, loadOptions);
-			textureUseCount[textureCache[fileName]]++;
+            textureUseCount[textureCache[fileName]]++;
 			return (T*)textureCache[fileName];
 		}
 		virtual void unload();
-		static void clearCache();
+		static void clearCache();*/
 
 
 		bool nearest;
@@ -50,7 +50,7 @@ namespace blib
 		virtual const unsigned char* getData() const = 0;
 
 	protected:
-		Texture() { textureRepeat = false; loaded = false; width = 0; height = 0; originalHeight = 0; originalWidth = 0; nearest = false; }
+		Texture() : Resource("Texture: empty") { textureRepeat = false; loaded = false; width = 0; height = 0; originalHeight = 0; originalWidth = 0; nearest = false; }
 		virtual ~Texture() {};
 		bool textureRepeat;
 

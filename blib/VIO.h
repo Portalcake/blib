@@ -4,12 +4,13 @@
 
 namespace blib
 {
+	namespace gl { class Renderer; }
 	class VIO : public Resource
 	{
 	protected:
 		int elementSize;
 	public:
-		VIO()
+		VIO() : Resource("VIO")
 		{
 			elementSize = 0;
 		}
@@ -24,6 +25,6 @@ namespace blib
 			elementSize = sizeof(T);
 		}
 
-
+		friend class gl::Renderer;
 	};
 }

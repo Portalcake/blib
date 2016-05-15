@@ -40,10 +40,16 @@ VertexDef(VertexP3C4,							color,		glm::vec4, 4, VertexP3)
 VertexDef(VertexP3T2C3,							color,		glm::vec3, 3, VertexP3T2)
 VertexDef(VertexP3T2C1,							filler,			int, 1, VertexP3T2)
 VertexDef(VertexP2T2C4,							color,		glm::vec4, 4, VertexP2T2)
+VertexDef(VertexP2T2C4C4,						colorOverlay,glm::vec4, 4, VertexP2T2C4)
 VertexDef(VertexP2C4T2,							tex1,		glm::vec2, 2, VertexP2C4)
 VertexDef(VertexP2C4T2T2,						tex2,		glm::vec2, 2, VertexP2C4T2)
 VertexDef(VertexP2C4T2T2F1,						_size,		float, 1, VertexP2C4T2T2)
 VertexDef(VertexP3N3C4,							color,		glm::vec4, 4, VertexP3N3)
+
+VertexDef(VertexP2T2C4P2,						position2,	glm::vec2,2, VertexP2T2C4)
+VertexDef(VertexP2T2C4P2R1,						rotation,	float,1, VertexP2T2C4P2)
+VertexDef(VertexP2T2C4P2R1S1,					scale,		float,1, VertexP2T2C4P2R1)
+
 
 #ifndef BLIB_IOS
 VertexDefi(VertexP3T2N3B4,						boneIds,	glm::ivec4,4, VertexP3T2N3)

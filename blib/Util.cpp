@@ -11,7 +11,9 @@
 #pragma comment(lib,"dbghelp.lib")
 #include <winbase.h>
 #else
+#ifndef BLIB_ANDROID
 #include <execinfo.h>
+#endif
 #include <sys/time.h>
 #endif
 
@@ -94,7 +96,16 @@ namespace blib
 
 		std::string replace(std::string orig, const std::string &find, const std::string &replace)
 		{
-			throw "argh";
+			size_t index = 0;
+			while (true)
+			{
+				index = orig.find(find, index);
+				if (index == std::string::npos)
+					break;
+				orig.replace(index, find.length(), replace);
+				++index;
+			}
+			return orig;
 		}
 
 
@@ -275,11 +286,15 @@ return "~/";
 		std::string callstack()
 		{
 #ifdef WIN32
+#ifdef _DEBUG
+			if (IsDebuggerPresent())
+				return "";
 			std::string ret;
 			unsigned int   i;
 			void         * stack[100];
 			unsigned short frames;
 			SYMBOL_INFO  * symbol;
+			IMAGEHLP_LINE line;
 			HANDLE         process;
 
 			process = GetCurrentProcess();
@@ -287,22 +302,31 @@ return "~/";
 			SymInitialize(process, NULL, TRUE);
 
 			frames = CaptureStackBackTrace(0, 100, stack, NULL);
-			symbol = (SYMBOL_INFO *)calloc(sizeof(SYMBOL_INFO)+256 * sizeof(char), 1);
-			symbol->MaxNameLen = 255;
+			symbol = (SYMBOL_INFO *)calloc(sizeof(SYMBOL_INFO)+128 * sizeof(char), 1);
+			symbol->MaxNameLen = 127;
 			symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+
+			ZeroMemory(&line, sizeof(IMAGEHLP_LINE));
+			line.SizeOfStruct = sizeof(IMAGEHLP_LINE);
+			DWORD dwDisplacement;
 
 			for (i = 0; i < frames; i++)
 			{
 				SymFromAddr(process, (DWORD64)(stack[i]), 0, symbol);
-				char buf[1024];
-				sprintf(buf, "%i: %s - 0x%0X\n", frames - i - 1, symbol->Name, symbol->Address);
+				SymGetLineFromAddr(process, (DWORD64)(stack[i]), &dwDisplacement, &line);
+				char buf[2048];
+				sprintf(buf, "%i: (%s:%i)\t%s\n", frames - i - 1, line.FileName, line.LineNumber, symbol->Name);
+				
 				ret += buf;
 			}
 			SymCleanup(process);
 			free(symbol);
 
 			return ret;
-#else
+#else //no debug
+			return "";
+#endif
+#elif !defined(BLIB_ANDROID)
             std::string ret;
             void* callstack[128];
             int frames= backtrace(callstack, 128);

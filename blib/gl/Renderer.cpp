@@ -27,6 +27,7 @@
 #include <blib/gl/Vertex.h>
 #include <blib/App.h>
 #include <blib/math/Ray.h>
+#include <fstream>
 
 using blib::util::Log;
 
@@ -51,8 +52,9 @@ namespace blib
 
 		void Renderer::flush()
 		{
-            GLint oldFbo;
-            glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFbo);
+            static GLint oldFbo = -1;
+			if(oldFbo == -1)
+				glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFbo);
             
 			int totalVerts = 0;
 			RenderState* lastRenderState = NULL;
@@ -93,9 +95,13 @@ namespace blib
 					glViewport(((RenderSetViewPort*)r)->left, ((RenderSetViewPort*)r)->top, ((RenderSetViewPort*)r)->width, ((RenderSetViewPort*)r)->height);
 					height = ((RenderSetViewPort*)r)->height;
 				}
-				else if(r->command == Render::SetVbo)
+				else if (r->command == Render::SetVbo)
 				{
-					r->perform(vertices[1-activeLayer]);
+					r->perform(vertices[1 - activeLayer]);
+				}
+				else if (r->command == Render::SetVboSub)
+				{
+					r->perform(vertices[1 - activeLayer]);
 				}
 				else if(r->command == Render::SetSubTexture)
 				{
@@ -142,6 +148,30 @@ namespace blib
 					}
 
 
+				}
+				else if (r->command == Render::SaveFbo)
+				{
+#ifdef BLIB_WIN
+					glBindFramebuffer(GL_FRAMEBUFFER, oldFbo);
+					((RenderSaveFbo*)r)->fbo->use();
+					int w, h;
+					glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+					glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+					char* data = new char[3*w*h];
+					glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
+					int xa = w % 256;
+					int xb = (w - xa) / 256; 
+					int ya = h % 256;
+					int yb = (h - ya) / 256;//assemble the header
+					unsigned char header[18] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, (unsigned char)xa, (unsigned char)xb, (unsigned char)ya, (unsigned char)yb, 24, 0 };
+					// write header and data to file
+					std::fstream File(((RenderSaveFbo*)r)->filename.c_str(), std::ios::out | std::ios::binary);
+					File.write(reinterpret_cast<char *>(header), sizeof(char) * 18);
+					File.write(reinterpret_cast<char *>(data), sizeof(char)*(w*h*3));
+					File.close();
+
+					delete[] data;
+#endif
 				}
 				else if(r->command == Render::DrawTriangles || r->command == Render::DrawLines || r->command == Render::DrawPoints || r->command == Render::DrawIndexedTriangles)
 				{
@@ -295,10 +325,11 @@ namespace blib
 					else if (r->command == Render::DrawLines)
 					{
 						float w = ((RenderBlock<blib::Vertex>*)r)->lineThickness;
-						if (w < 0)
-							w = 0.1f;
-						glLineWidth(w);
-						glDrawArrays(GL_LINES, start, r->vertexCount());
+						if (w > 0 && r->vertexCount() > 0)
+						{
+							glLineWidth(w);
+							glDrawArrays(GL_LINES, start, r->vertexCount());
+						}
 					}
 					else if(r->command == Render::DrawPoints)
 					{
@@ -313,7 +344,10 @@ namespace blib
 					{
 						//TODO: get the unsigned short from the renderblock
 						//TODO: get rid of these casts here
-						glDrawElements(GL_TRIANGLES, ((RenderBlock<blib::VertexP3T2>*)r)->count, GL_UNSIGNED_SHORT, (void*)(((RenderBlock<blib::VertexP3T2>*)r)->vertexStart * sizeof(unsigned short)));
+						if(r->renderState.activeVio->elementSize == sizeof(unsigned short))
+							glDrawElements(GL_TRIANGLES, ((RenderBlock<blib::VertexP3T2>*)r)->count, GL_UNSIGNED_SHORT, (void*)(((RenderBlock<blib::VertexP3T2>*)r)->vertexStart * sizeof(unsigned short)));
+						else
+							glDrawElements(GL_TRIANGLES, ((RenderBlock<blib::VertexP3T2>*)r)->count, GL_UNSIGNED_INT, (void*)(((RenderBlock<blib::VertexP3T2>*)r)->vertexStart * sizeof(unsigned int)));
 					}
 					lastRenderState = &r->renderState;
 				}

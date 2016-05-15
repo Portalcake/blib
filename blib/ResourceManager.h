@@ -28,13 +28,33 @@ namespace blib
 
 	class ResourceManager
 	{
+	private:
+		static ResourceManager* manager;
+		ResourceManager(const ResourceManager& other);
+
+		enum class ResType
+		{
+			TEXTURE,
+			SHADER,
+			TEXTUREMAP,
+			VBO,
+			FBO,
+			VIO,
+			FONT,
+			SPRITESHEET
+		};
+
 	public:
 		std::map<Resource*, int> resources;
 		virtual Resource* regResource(Resource* resource);
 		virtual void dispose(Resource* resource);
 
+		static ResourceManager& getInstance();
+
+
 		ResourceManager();
 		virtual ~ResourceManager();
+		void printDebug();
 
 		template<class T>
 		inline T* getResource(const std::string &name)
@@ -139,6 +159,7 @@ namespace blib
 	{
 		return (FBO*)regResource(fbo());
 	}
+
 
 
 	class NullResource : public ResourceManager
