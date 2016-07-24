@@ -5,6 +5,7 @@
 #include <blib/util/stb_vorbis.h>
 #include <vector>
 #include <thread>
+#include <mutex>
 
 #ifdef BLIB_IOS
 #include <OpenAL/al.h>
@@ -23,6 +24,8 @@ namespace blib
 		OpenALAudioSample* lastSample = NULL;
 		ALuint sourceId;
 
+		int index;
+
 		bool isPlaying();
 	};
 
@@ -31,12 +34,12 @@ namespace blib
 	{
 	public:
 		//ogg stuff
+		std::string fileName;
 		char* fileData;
 		stb_vorbis* stream;
 		stb_vorbis_info info;
 		ALuint buffers[2];
 		ALenum format;
-		size_t totalSamplesLeft;
 		bool buffer(ALuint buffer);
 
 		//wav stuff
@@ -53,7 +56,7 @@ namespace blib
 		virtual void play(bool loop) override;
 		virtual void stop() override;
 		virtual bool isPlaying() override;
-		virtual void setVolume(int volume);
+		virtual void setVolume(int volume) override;
 
 		virtual bool update();
 
@@ -62,14 +65,13 @@ namespace blib
 	class AudioManagerOpenAL : public AudioManager
 	{
 	public:
-
+		std::mutex mutex;
 		std::vector<Source> sources;
 		std::vector<OpenALAudioSample*> samples;
 		int lastSource = 0;
 		bool running;
 	public:
 		std::thread backgroundThread;
-
 		AudioManagerOpenAL();
 		virtual ~AudioManagerOpenAL();
 		virtual void init();
