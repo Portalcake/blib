@@ -7,7 +7,7 @@
 #include <blib/KeyListener.h>
 #include <blib/MouseListener.h>
 #include <blib/App.h> //for mousestate
-#include <blib/json.h>
+#include <blib/json.hpp>
 #include <glm/glm.hpp>
 #include <blib/gl/GlResizeRegister.h>
 #include <functional>
@@ -19,6 +19,8 @@ namespace blib
 	class SpriteBatch;
 	class ResourceManager;
 	enum class Key;
+
+	class ToolBar;
 
 	namespace wm
 	{
@@ -55,6 +57,7 @@ namespace blib
 
 			std::map<Key, MenuItem*> menuKeys;
 
+			ToolBar* toolBar = nullptr;
 
 
 		public:
@@ -77,7 +80,7 @@ namespace blib
 			bool keyboardSpecial(int key);
 			bool hasModalWindow();
 			glm::vec4 convertHexColor4( std::string hexColor );
-			blib::wm::Menu* loadMenu( std::string filename, const blib::json::Value &translation);
+			blib::wm::Menu* loadMenu( std::string filename, const json &translation);
 			void setRadialMenu( blib::wm::Menu* param1 );
 			void setMenuBar(blib::wm::Menu* menu);
 
@@ -90,11 +93,11 @@ namespace blib
 			virtual bool onKeyUp(Key key);
 			virtual bool onChar(char character);
 
-			virtual void resizeGl(int width, int height);
+			virtual void resizeGl(int width, int height, int offx, int offy);
 
 			bool inWindow(const glm::ivec2 &pos) { return inWindow(pos.x, pos.y);  }
 			bool inWindow(int x, int y);
-			json::Value skin;
+			json skin;
 			Texture* skinTexture;
 			Font* font;
 			Font* radialmenufont;

@@ -27,6 +27,7 @@ namespace blib
 			Vec4,
 			Mat3,
 			Mat4,
+			Bool,
 			Struct,
 			Array,
 		};
@@ -169,6 +170,9 @@ namespace blib
 			case Int:
 				uniform = new Uniform(name, sizeof(int), type);
 				break;
+			case Bool:
+				uniform = new Uniform(name, sizeof(bool), type);
+				break;
 			case Vec2:
 				uniform = new Uniform(name, sizeof(float)* 2, type);
 				break;
@@ -196,7 +200,7 @@ namespace blib
 		{
 			Uniform* uniform = buildUniform(name, type);
 			uniforms[(int)value] = uniform;
-			uniformCount = glm::max(uniformCount, (int)value + 1);
+			uniformCount = glm::max<int>(uniformCount, (int)value + 1);
 			uniform->index = uniformSize+1;
 			uniformSize += uniform->size+1;
 		}
@@ -233,7 +237,7 @@ namespace blib
 		{
 			ArrayUniform* u = new ArrayUniform(name);
 			uniforms[(int)value] = u;
-			uniformCount = glm::max(uniformCount, (int)value + 1);
+			uniformCount = glm::max<int>(uniformCount, (int)value + 1);
 
 			for (int i = 0; i < size; i++)
 			{

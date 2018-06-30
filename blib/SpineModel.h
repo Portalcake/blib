@@ -23,6 +23,7 @@ namespace blib
 	class SpineModelInstance
 	{
 	public:
+		std::string lastAnimation;
 		float fixedTime = -1;
 		SpineModel* model;
 		spSkeleton* skeleton;
@@ -33,8 +34,10 @@ namespace blib
 		void draw(const glm::mat4& transform, SpriteBatch& spriteBatch);
 
 		void playAnimation(const std::string &name, bool loop);
+		void playAnimationOnTrack(const std::string &name, int track, bool loop);
 		void playAnimation(const std::string &name, const std::function<void()> &callback);
-		void stopAnimation(const std::string &name);
+		void stopAnimation(const std::string &name, bool reset = true);
+		void stopAnimationOnTrack(const std::string &name, int track);
 
 		void setAnimation(const std::string &name, float time);
 		

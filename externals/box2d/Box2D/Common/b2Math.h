@@ -19,9 +19,13 @@
 #ifndef B2_MATH_H
 #define B2_MATH_H
 
-#include <Box2D/Common/b2Settings.h>
+#include "Box2D/Common/b2Settings.h"
 #include <math.h>
 #include <glm/glm.hpp>
+#ifdef WIN32
+#include <Windows.h>
+#include <stdio.h>
+#endif
 
 /// This function is used to ensure that a floating point number is not a NaN or infinity.
 inline bool b2IsValid(float32 x)
@@ -57,9 +61,29 @@ struct b2Vec2
 	b2Vec2() {}
 
 	/// Construct using coordinates.
-	b2Vec2(float32 xIn, float32 yIn) : x(xIn), y(yIn) {}
+	b2Vec2(float32 xIn, float32 yIn) : x(xIn), y(yIn) {
+	
+#ifdef WIN32
+		if (!(x == x) || !(y == y))
+		{
+			printf("ARGH1");
+			while ((GetAsyncKeyState(VK_F1) & 1) != 1)
+				Sleep(10);
+		}
+#endif
+	}
 
-	b2Vec2(const glm::vec2 &in) : x(in.x), y(in.y) {}
+	b2Vec2(const glm::vec2 &in) : x(in.x), y(in.y) {
+	
+#ifdef WIN32
+		if (!(x == x) || !(y == y))
+		{
+			printf("ARGH2");
+			while ((GetAsyncKeyState(VK_F1) & 1) != 1)
+				Sleep(10);
+		}
+#endif
+	}
 
 	const glm::vec2 vec2() const { return glm::vec2(x, y); }
 	operator const glm::vec2() const { return glm::vec2(x, y); }
@@ -68,7 +92,16 @@ struct b2Vec2
 	void SetZero() { x = 0.0f; y = 0.0f; }
 
 	/// Set this vector to some specified coordinates.
-	void Set(float32 x_, float32 y_) { x = x_; y = y_; }
+	void Set(float32 x_, float32 y_) { 
+#ifdef WIN32
+		if (!(x_ == x_) || !(y_ == y_))
+		{
+			printf("ARGH3");
+			while ((GetAsyncKeyState(VK_F1) & 1) != 1)
+				Sleep(10);
+		}
+#endif
+		x = x_; y = y_; }
 
 	/// Negate this vector.
 	b2Vec2 operator -() const { b2Vec2 v; v.Set(-x, -y); return v; }

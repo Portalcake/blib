@@ -11,7 +11,7 @@
 #include <al/alc.h>
 #endif
 #include "CWaves.h"
-
+#include <algorithm>
 
 
 
@@ -75,7 +75,6 @@ namespace blib
 
 	void AudioManagerOpenAL::init()
 	{
-		ALCdevice *device;
 		device = alcOpenDevice(NULL);
 		if (!device)
 			Log::out << "Error initializing OpenAL" << Log::newline;
@@ -143,6 +142,7 @@ namespace blib
 
 	AudioSample* AudioManagerOpenAL::loadSample(const std::string &filename)
 	{
+		mutex.lock();
 		OpenALAudioSample* sample = NULL;
 		if (filename.substr(filename.size() - 4) == ".wav")
 			sample = loadSampleWav(filename);
@@ -152,6 +152,7 @@ namespace blib
 		{
 			samples.push_back(sample);
 		}
+		mutex.unlock();
 		return sample;
 	}
 
@@ -184,10 +185,11 @@ namespace blib
 			checkError();
 			if (alGetError() == AL_NO_ERROR)
 				bReturn = AL_TRUE;
-
 			w.DeleteWaveFile(WaveID);
 
 		}
+		else
+			Log::out << "Error loading wave file: " << filename << Log::newline;
 		checkError();
 		OpenALAudioSample* newSample = new OpenALAudioSample();
 		newSample->fileName = filename;
@@ -239,11 +241,11 @@ namespace blib
 
 	bool OpenALAudioSample::buffer(ALuint buffer)
 	{
-		Log::out << "AudioManager: buffering sound " << fileName << " to buffer " << buffer << Log::newline;
+	//	Log::out << "AudioManager: buffering sound " << fileName << " to buffer " << buffer << Log::newline;
 		//Uncomment this to avoid VLAs
 		//#define BUFFER_SIZE 4096*32
 #ifndef BUFFER_SIZE//VLAs ftw
-#define BUFFER_SIZE 4096*32*4
+#define BUFFER_SIZE 4096*8
 #endif
 		ALshort* pcm = new ALshort[BUFFER_SIZE];
 		int  size = 0;
@@ -289,8 +291,33 @@ namespace blib
 
 
 
+	OpenALAudioSample::~OpenALAudioSample()
+	{
+		manager->mutex.lock();
+		if (bufferId)
+		{
+			assert(alIsBuffer(bufferId) == AL_TRUE);
+			checkError();
+			if (source)
+				alSourceUnqueueBuffers(source->sourceId, 1, &bufferId);
+			checkError();
+			alDeleteBuffers(1, &bufferId);
+			checkError();
+		}
+
+		if (manager)
+		{
+			manager->samples.erase(std::remove(manager->samples.begin(), manager->samples.end(), this), manager->samples.end());
+		}
+		if(fileData)
+			delete[] fileData;
+		manager->mutex.unlock();
+	}
+
 	void OpenALAudioSample::play(bool loop)
 	{
+		if (!manager->device)
+			return;
 		if (canOnlyPlayOnce && playing && isPlaying())
 			return;
 		if (manager->canPlay && !manager->canPlay(this))
@@ -300,6 +327,7 @@ namespace blib
 		Source* newSource = manager->getFreeSource();
 		if (!newSource)
 		{
+			Log::out << " Error getting free resource while playing "<<this->fileName << Log::newline;
 			manager->mutex.unlock();
 			return;
 		}
@@ -314,16 +342,17 @@ namespace blib
 			alSourcei(source->sourceId, AL_BUFFER, 0);
 			alSourcei(source->sourceId, AL_BUFFER, bufferId);
 			alSourcef(source->sourceId, AL_PITCH, 1.0f);
-			alSourcef(source->sourceId, AL_GAIN, 1.0f);
+			alSourcef(source->sourceId, AL_GAIN, volume / 100.0f);
 			alSource3f(source->sourceId, AL_POSITION, 0, 0, 0);
 			alSource3f(source->sourceId, AL_VELOCITY, 0, 0, 0);
 			alSourcei(source->sourceId, AL_LOOPING, loop);
 			alSourcePlay(source->sourceId);
+			checkError();
 		}
 		else //ogg
 		{
 			alSourcef(source->sourceId, AL_PITCH, 1.0f);
-			alSourcef(source->sourceId, AL_GAIN, 1.0f);
+			alSourcef(source->sourceId, AL_GAIN, volume / 100.0f);
 			alSource3f(source->sourceId, AL_POSITION, 0, 0, 0);
 			alSource3f(source->sourceId, AL_VELOCITY, 0, 0, 0);
 			alSourcei(source->sourceId, AL_LOOPING, 0);
@@ -336,7 +365,6 @@ namespace blib
 			checkError();
 		}
 		playing = true;
-		checkError();
 		manager->mutex.unlock();
 	}
 
@@ -350,6 +378,11 @@ namespace blib
 				alSourceStop(source->sourceId);
 				source->lastSample = nullptr;
 			}
+			if (bufferId == 0 && source)
+				alSourceUnqueueBuffers(source->sourceId, 2, buffers);
+			else if(source)
+				alSourceUnqueueBuffers(source->sourceId, 1, &bufferId);
+
 			playing = false;
 			source = nullptr;
 			manager->mutex.unlock();
@@ -376,6 +409,9 @@ namespace blib
 
 	void OpenALAudioSample::setVolume(int volume)
 	{
+		if (volume < 1)
+			volume = 1;
+		this->volume = volume;
 		if(source)
 			alSourcef(source->sourceId, AL_GAIN, volume/100.0f);
 	}
@@ -389,6 +425,7 @@ namespace blib
 
 			while (processed--) {
 				ALuint buf = 0;
+				//Log::out << "AudioManager: chunk processed" << Log::newline;
 
 				alSourceUnqueueBuffers(source->sourceId, 1, &buf);
 				if(buf != 0)
@@ -432,6 +469,30 @@ namespace blib
 		mutex.lock();
 		for (OpenALAudioSample* sample : samples)
 			sample->update();
+		mutex.unlock();
+	}
+
+	void AudioManagerOpenAL::stopAllSounds()
+	{
+		mutex.lock();
+		for (OpenALAudioSample* sample : samples)
+		{
+			mutex.unlock();
+			sample->stop();
+			mutex.lock();
+		}
+		
+		for(Source & source : sources)
+		{
+			alSourceStop(source.sourceId);
+			
+			ALint buffer = 0;
+			alGetSourcei(source.sourceId, AL_BUFFER, &buffer);
+			if(buffer > 0)
+				alSourceUnqueueBuffers(source.sourceId, 1, (ALuint*)&buffer);
+
+			source.lastSample = nullptr;
+		}
 		mutex.unlock();
 	}
 

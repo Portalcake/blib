@@ -89,8 +89,8 @@ namespace blib
 				glm::vec2 center = (it->p1 + it->p2) / 2.0f;
 				glm::vec2 normal = glm::normalize(glm::vec2(it->p2.y - it->p1.y, -(it->p2.x - it->p1.x)));
 
-				verts.push_back(vertexDef(glm::vec2(transform * glm::vec4(center,0,1)), glm::clamp(color * 1.25f, 0, 1)));
-				verts.push_back(vertexDef(glm::vec2(transform * glm::vec4(center + 10.0f * normal,0,1)), glm::clamp(color * 1.25f, 0, 1)));
+				verts.push_back(vertexDef(glm::vec2(transform * glm::vec4(center,0,1)), glm::clamp(color * 1.25f, 0.0f, 1.0f)));
+				verts.push_back(vertexDef(glm::vec2(transform * glm::vec4(center + 10.0f * normal,0,1)), glm::clamp(color * 1.25f, 0.0f, 1.0f)));
 			}
 
 		}
@@ -98,10 +98,10 @@ namespace blib
 	}
 
 
-	void LineBatch::resizeGl( int width, int height )
+	void LineBatch::resizeGl( int width, int height, int offsetX, int offsetY )
 	{
-		renderState.activeShader->setUniform(Uniforms::projectionMatrix, glm::ortho(0.0f, (float)width, (float)height, 0.0f, -1000.0f, 1.0f));
-	}
+        renderState.activeShader->setUniform(Uniforms::projectionMatrix, glm::ortho((float)offsetX, (float)width+offsetX, (float)height+offsetY, (float)offsetY, -1000.0f, 1.0f));
+    }
 
 
 	void LineBatch::startCache()

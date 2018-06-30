@@ -23,20 +23,21 @@ namespace blib
 	//	static Font* getFontInstance(std::string name, ResourceManager* resourceManager);
 	//	static void clearCache();
 	//	void render(std::string text, float scale);
-		std::map<char, Glyph*> charmap;
+		std::map<int, Glyph*> charmap;
 		Texture* texture;
 		Font(std::string file, ResourceManager* resourceManager);
 		~Font();
 
-		const Glyph* getGlyph( const char &character ) const;
+		const Glyph* getGlyph( const int &character ) const;
 
+		float lineHeight;
 
 		friend class gl::ResourceManager;
 		friend class gl::direct::ResourceManager;
 		friend class SpriteBatch;
 
 	public:
-		float textlen(std::string text);
+		float textlen(const std::string &text) const;
 
 	};
 }

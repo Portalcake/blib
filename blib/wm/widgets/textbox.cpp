@@ -38,9 +38,16 @@ Textbox::Textbox( )
     {
         if (key >= ' ') //only printable
         {
-            text = text.substr(0, cursor) + (char)key + text.substr(cursor);
+			if (cursor != selectionPosition)
+			{
+				text = text.substr(0, glm::min(cursor, selectionPosition)) + text.substr(glm::max(cursor, selectionPosition));
+				cursor = glm::min(cursor, selectionPosition);
+				selectionPosition = cursor;
+			}
+			text = text.substr(0, cursor) + (char)key + text.substr(cursor);
             cursor++;
             selectionPosition = cursor;
+			for (const auto& o : onChange)	o();
             return true;
         }
         return false;
@@ -67,20 +74,36 @@ Textbox::Textbox( )
         case blib::Key::BACKSPACE:
             if (cursor > 0)
             {
-                //TODO: erase selection
-                text = text.substr(0, cursor - 1) + text.substr(cursor);
-                cursor--;
-                selectionPosition = cursor;
-            }
+				if (cursor != selectionPosition)
+				{
+					text = text.substr(0, glm::min(cursor, selectionPosition)) + text.substr(glm::max(cursor, selectionPosition));
+					cursor = glm::min(cursor, selectionPosition);
+					selectionPosition = cursor;
+				}
+				else
+				{
+					text = text.substr(0, cursor - 1) + text.substr(cursor);
+					cursor--;
+					selectionPosition = cursor;
+				}
+				for (const auto& o : onChange)	o();
+			}
             return true;
         case blib::Key::TAB:
             return true;
         case blib::Key::DEL:
             if (cursor < text.size())
             {
-                //TODO: erase selection
-                text = text.substr(0, cursor) + text.substr(cursor + 1);
-            }
+				if (cursor != selectionPosition)
+				{
+					text = text.substr(0, glm::min(cursor, selectionPosition)) + text.substr(glm::max(cursor, selectionPosition));
+					cursor = glm::min(cursor, selectionPosition);
+					selectionPosition = cursor;
+				}
+				else
+					text = text.substr(0, cursor) + text.substr(cursor + 1);
+				for (const auto& o : onChange)	o();
+			}
             return true;
         case blib::Key::HOME:
             cursor = 0;
@@ -134,6 +157,13 @@ Textbox::Textbox( )
         cursor = text.size();
         if (!shiftDown)
             selectionPosition = cursor;
+
+		if (clickCount == 2)
+		{
+			cursor = 0;
+			selectionPosition = text.size();
+		}
+
         return true;
     });
 
@@ -174,7 +204,7 @@ void Textbox::draw(SpriteBatch& spriteBatch, glm::mat4 matrix, Renderer* rendere
         const_cast<Textbox*>(this)->selectionPosition = cursor;
 
 
-    json::Value skin = WM::getInstance()->skin["input"];
+    json skin = WM::getInstance()->skin["input"];
     Font* font = WM::getInstance()->font;
     Texture* texture = WM::getInstance()->skinTexture;
 
@@ -193,19 +223,19 @@ void Textbox::draw(SpriteBatch& spriteBatch, glm::mat4 matrix, Renderer* rendere
         {
             float posLeft = font->textlen(preSelectionText);
             float selectionWidth = font->textlen(selectionText);
-            spriteBatch.drawStretchyRect(texture, glm::translate(matrix, glm::vec3(x + 2 + posLeft, y + 4, 0)), skin, glm::vec2(selectionWidth, 12), WM::getInstance()->convertHexColor4(skin["selectcolor"].asString()));
+            spriteBatch.drawStretchyRect(texture, glm::translate(matrix, glm::vec3(x + 2 + posLeft, y + 4, 0)), skin, glm::vec2(selectionWidth, 12), WM::getInstance()->convertHexColor4(skin["selectcolor"].get<std::string>()));
         }
 
 
         glm::vec2 renderPos(0, 0);
-        renderPos = spriteBatch.draw(font, preSelectionText, glm::translate(matrix, glm::vec3(x + 1.0f, y + 3, 0)), WM::getInstance()->convertHexColor4(skin["fontcolor"].asString()), renderPos);
-        renderPos = spriteBatch.draw(font, selectionText, glm::translate(matrix, glm::vec3(x + 1.0f, y + 3, 0)), WM::getInstance()->convertHexColor4(skin["selectfontcolor"].asString()), renderPos);
-        renderPos = spriteBatch.draw(font, postSelectionText, glm::translate(matrix, glm::vec3(x + 1.0f, y + 3, 0)), WM::getInstance()->convertHexColor4(skin["fontcolor"].asString()), renderPos);
+        renderPos = spriteBatch.draw(font, preSelectionText, glm::translate(matrix, glm::vec3(x + 1.0f, y + 3, 0)), WM::getInstance()->convertHexColor4(skin["fontcolor"].get<std::string>()), renderPos);
+        renderPos = spriteBatch.draw(font, selectionText, glm::translate(matrix, glm::vec3(x + 1.0f, y + 3, 0)), WM::getInstance()->convertHexColor4(skin["selectfontcolor"].get<std::string>()), renderPos);
+        renderPos = spriteBatch.draw(font, postSelectionText, glm::translate(matrix, glm::vec3(x + 1.0f, y + 3, 0)), WM::getInstance()->convertHexColor4(skin["fontcolor"].get<std::string>()), renderPos);
 
 
 
         if ((int)((blib::util::Profiler::getAppTime() - blinkTime)* 2) % 2 == 0 && selected)
-            spriteBatch.draw(font, "|",  glm::translate(matrix, glm::vec3(x - 1.0f + font->textlen(text.substr(0, cursor)), y + 3, 0)), WM::getInstance()->convertHexColor4(skin["fontcolor"].asString()));
+            spriteBatch.draw(font, "|",  glm::translate(matrix, glm::vec3(x - 1.0f + font->textlen(text.substr(0, cursor)), y + 3, 0)), WM::getInstance()->convertHexColor4(skin["fontcolor"].get<std::string>()));
 
     }
     else

@@ -24,19 +24,19 @@ namespace blib
 		std::string toString(int number);
 		std::string toString(float number);
 		std::vector<std::string> split(std::string toSplit, const std::string &seperator, bool removeEmpty = true);
-		static inline std::string &ltrim(std::string &s) {
+		static inline std::string ltrim(std::string s) {
 			s.erase(0, s.find_first_not_of(" \n\r\t"));
 			return s;
 		}
 
 		// trim from end
-		static inline std::string &rtrim(std::string &s) {
+		static inline std::string rtrim(std::string s) {
 			s.erase(s.find_last_not_of(" \n\r\t") + 1);
 			return s;
 		}
 
 		// trim from both ends
-		static inline std::string &trim(std::string &s) {
+		static inline std::string trim(std::string &s) {
 			return ltrim(rtrim(s));
 		}
 
@@ -91,6 +91,8 @@ namespace blib
 
 		glm::vec3 hsv2rgb(glm::vec3 hsv);
 		glm::vec3 rgb2hsv(glm::vec3 rgb);
+		std::string rgb2hex(const glm::vec3 &rgb);
+		glm::vec3 hex2rgb(std::string hex);
 
 
 		bool isMainModule();

@@ -45,6 +45,7 @@
     <ClInclude Include="blib\IWindow.h" />
     <ClInclude Include="blib\JoyState.h" />
     <ClInclude Include="blib\json.h" />
+    <ClInclude Include="blib\json.hpp" />
     <ClInclude Include="blib\KeyListener.h" />
     <ClInclude Include="blib\LineBatch.h" />
     <ClInclude Include="blib\linq.h" />
@@ -84,6 +85,7 @@
     <ClInclude Include="blib\TextureMap.h" />
     <ClInclude Include="blib\Util.h" />
     <ClInclude Include="blib\util\Allocator.h" />
+    <ClInclude Include="blib\util\DirtyFlag.h" />
     <ClInclude Include="blib\util\FileSystem.h" />
     <ClInclude Include="blib\util\ListAllocator.h" />
     <ClInclude Include="blib\util\Log.h" />
@@ -108,6 +110,7 @@
     <ClInclude Include="blib\util\StreamWriter.h" />
     <ClInclude Include="blib\util\Thread.h" />
     <ClInclude Include="blib\util\Tree.h" />
+    <ClInclude Include="blib\util\Watchable.h" />
     <ClInclude Include="blib\VBO.h" />
     <ClInclude Include="blib\VIO.h" />
     <ClInclude Include="blib\Window.h" />
@@ -131,6 +134,12 @@
     <ClInclude Include="blib\wm\widgets\Widget.h" />
     <ClInclude Include="blib\wm\Window.h" />
     <ClInclude Include="blib\wm\WM.h" />
+    <ClInclude Include="externals\b2dJson\b2dJson.h" />
+    <ClInclude Include="externals\b2dJson\b2dJsonImage.h" />
+    <ClInclude Include="externals\b2dJson\b2dJsonImage_OpenGL.h" />
+    <ClInclude Include="externals\b2dJson\bitmap.h" />
+    <ClInclude Include="externals\b2dJson\json\json-forwards.h" />
+    <ClInclude Include="externals\b2dJson\json\json.h" />
     <ClInclude Include="externals\box2d\Box2D\Box2D.h" />
     <ClInclude Include="externals\box2d\Box2D\Collision\b2BroadPhase.h" />
     <ClInclude Include="externals\box2d\Box2D\Collision\b2Collision.h" />
@@ -169,6 +178,7 @@
     <ClInclude Include="externals\box2d\Box2D\Dynamics\Joints\b2FrictionJoint.h" />
     <ClInclude Include="externals\box2d\Box2D\Dynamics\Joints\b2GearJoint.h" />
     <ClInclude Include="externals\box2d\Box2D\Dynamics\Joints\b2Joint.h" />
+    <ClInclude Include="externals\box2d\Box2D\Dynamics\Joints\b2MotorJoint.h" />
     <ClInclude Include="externals\box2d\Box2D\Dynamics\Joints\b2MouseJoint.h" />
     <ClInclude Include="externals\box2d\Box2D\Dynamics\Joints\b2PrismaticJoint.h" />
     <ClInclude Include="externals\box2d\Box2D\Dynamics\Joints\b2PulleyJoint.h" />
@@ -464,7 +474,47 @@
     <ClInclude Include="externals\poly2tri\sweep\cdt.h" />
     <ClInclude Include="externals\poly2tri\sweep\sweep.h" />
     <ClInclude Include="externals\poly2tri\sweep\sweep_context.h" />
-    <ClInclude Include="externals\spine\spine-c\src\spine\Json.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Animation.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\AnimationState.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\AnimationStateData.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Array.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Atlas.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\AtlasAttachmentLoader.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Attachment.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\AttachmentLoader.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Bone.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\BoneData.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\BoundingBoxAttachment.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\ClippingAttachment.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Color.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Event.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\EventData.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\extension.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\IkConstraint.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\IkConstraintData.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\MeshAttachment.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\PathAttachment.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\PathConstraint.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\PathConstraintData.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\PointAttachment.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\RegionAttachment.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Skeleton.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\SkeletonBinary.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\SkeletonBounds.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\SkeletonClipping.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\SkeletonData.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\SkeletonJson.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Skin.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Slot.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\SlotData.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\spine.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\TransformConstraint.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\TransformConstraintData.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\Triangulator.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\VertexAttachment.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\include\spine\VertexEffect.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\src\spine\Json.h" />
+    <ClInclude Include="externals\spine\spine-c\spine-c\src\spine\kvec.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="blib\AnimatableSprite.cpp" />
@@ -558,6 +608,10 @@
     <ClCompile Include="blib\wm\widgets\Widget.cpp" />
     <ClCompile Include="blib\wm\Window.cpp" />
     <ClCompile Include="blib\wm\WM.cpp" />
+    <ClCompile Include="externals\b2dJson\b2dJson.cpp" />
+    <ClCompile Include="externals\b2dJson\b2dJsonImage.cpp" />
+    <ClCompile Include="externals\b2dJson\b2dJsonImage_OpenGL.cpp" />
+    <ClCompile Include="externals\b2dJson\jsoncpp.cpp" />
     <ClCompile Include="externals\box2d\Box2D\Collision\b2BroadPhase.cpp" />
     <ClCompile Include="externals\box2d\Box2D\Collision\b2CollideCircle.cpp" />
     <ClCompile Include="externals\box2d\Box2D\Collision\b2CollideEdge.cpp" />
@@ -761,32 +815,45 @@
     <ClCompile Include="externals\poly2tri\sweep\cdt.cc" />
     <ClCompile Include="externals\poly2tri\sweep\sweep.cc" />
     <ClCompile Include="externals\poly2tri\sweep\sweep_context.cc" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\Animation.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\AnimationState.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\AnimationStateData.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\Atlas.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\AtlasAttachmentLoader.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\Attachment.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\AttachmentLoader.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\Bone.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\BoneData.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\BoundingBoxAttachment.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\Event.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\EventData.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\extension.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\IkConstraint.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\IkConstraintData.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\Json.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\MeshAttachment.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\RegionAttachment.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\Skeleton.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\SkeletonBounds.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\SkeletonData.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\SkeletonJson.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\Skin.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\SkinnedMeshAttachment.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\Slot.c" />
-    <ClCompile Include="externals\spine\spine-c\src\spine\SlotData.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Animation.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\AnimationState.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\AnimationStateData.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Array.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Atlas.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\AtlasAttachmentLoader.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Attachment.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\AttachmentLoader.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Bone.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\BoneData.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\BoundingBoxAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\ClippingAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Color.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Event.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\EventData.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\extension.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\IkConstraint.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\IkConstraintData.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Json.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\MeshAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\PathAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\PathConstraint.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\PathConstraintData.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\PointAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\RegionAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Skeleton.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\SkeletonBinary.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\SkeletonBounds.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\SkeletonClipping.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\SkeletonData.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\SkeletonJson.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Skin.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Slot.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\SlotData.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\TransformConstraint.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\TransformConstraintData.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\Triangulator.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\VertexAttachment.c" />
+    <ClCompile Include="externals\spine\spine-c\spine-c\src\spine\VertexEffect.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="externals\glew\doc\credits.html" />
@@ -831,14 +898,15 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;GLEW_STATIC;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)\%(RelativeDir)\</ObjectFileName>
-      <AdditionalIncludeDirectories>.;externals\glew\include;externals;externals\box2d;externals\bullet3\src;externals\openal\include;externals\spine\spine-c\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;externals\glew\include;externals;externals\box2d;externals\bullet3\src;externals\openal\include;externals\spine\spine-c\spine-c\include</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -861,11 +929,12 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;WIN32;NDEBUG;_LIB;GLEW_STATIC;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;WIN32;NDEBUG;_LIB;GLEW_STATIC;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)\%(RelativeDir)\</ObjectFileName>
-      <AdditionalIncludeDirectories>.;externals\glew\include;externals;externals\box2d;externals\bullet3\src;externals\openal\include;externals\spine\spine-c\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;externals\glew\include;externals;externals\box2d;externals\bullet3\src;externals\openal\include;externals\spine\spine-c\spine-c\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

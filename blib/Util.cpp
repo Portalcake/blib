@@ -264,7 +264,7 @@ return "~/";
 			else {
 				// r = g = b = 0                        // s = 0, v is undefined
 				out.y = 0.0;
-				out.x = NAN;                            // its now undefined
+				out.x = 0.0;                            // its now undefined
 				return out;
 			}
 			if (rgb.r >= max)                           // > is bogus, just keeps compilor happy
@@ -282,6 +282,26 @@ return "~/";
 
 			return out;
 		}
+
+
+		std::string rgb2hex(const glm::vec3 &rgb)
+		{
+			char hex[10];
+			sprintf(hex, "%02X%02X%02X", (int)(rgb.r * 255), (int)(rgb.g * 255), (int)(rgb.b * 255));
+			return hex;
+		}
+
+		glm::vec3 hex2rgb(std::string hex)
+		{
+			std::transform(hex.begin(), hex.end(), hex.begin(), ::tolower);
+			static std::string digits = "0123456789abcdef";
+			float r = (digits.find(hex[0]) << 4 | digits.find(hex[1])) / 255.0f;
+			float g = (digits.find(hex[2]) << 4 | digits.find(hex[3])) / 255.0f;
+			float b = (digits.find(hex[4]) << 4 | digits.find(hex[5])) / 255.0f;
+			return glm::vec3(r, g, b);
+		}
+
+
 
 		std::string callstack()
 		{

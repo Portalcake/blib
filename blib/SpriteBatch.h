@@ -6,12 +6,11 @@
 #include <blib/math/Rectangle.h>
 #include <blib/TextureMap.h>
 #include <blib/RenderState.h>
+#include <blib/json.hpp>
 #include <queue>
-
 
 namespace blib
 {
-	namespace json { class Value; }
 	class Texture;
 	class Shader;
 	class Font;
@@ -33,12 +32,13 @@ namespace blib
 		{
 			blib::VBO* vbo = NULL;
 		public:
+			//pair<texture, end of what to draw>
 			std::vector<std::pair<const Texture*, unsigned short> > materialIndices;
 			std::vector<vertexDef> verts;
 			~Cache();
 
 			void initVbo(SpriteBatch& spriteBatch);
-			void drawVbo(SpriteBatch& spriteBatch);
+			void drawVbo(SpriteBatch& spriteBatch, const glm::mat4 &mat = glm::mat4());
 		};
 	private:
 
@@ -61,6 +61,9 @@ namespace blib
 
 
 	public:
+		bool utf8 = true;
+		int tabsize = 50;
+
 		RenderState renderState;
 		blib::Shader* shader;
 		enum ShaderAttributes
@@ -77,7 +80,7 @@ namespace blib
 		virtual void end();
 
 		virtual void startCache();
-		virtual Cache* getCache();
+		virtual Cache* getCache(bool removeFromRenderQueue = false);
 		virtual void drawCache(Cache* cache);
 
 
@@ -89,16 +92,17 @@ namespace blib
 		virtual void draw(const TextureMap::TexInfo* sprite, const glm::mat4 &transform, const glm::vec2 &center, const glm::vec4 &color = glm::vec4(1, 1, 1, 1), const glm::vec4 &colorOverlay = glm::vec4(1, 1, 1, 0));
 		virtual void draw(const TextureMap::TexInfo* sprite, const glm::mat4 &transform, const glm::vec2 &center, const blib::math::Rectangle &src, const glm::vec4 &color = glm::vec4(1, 1, 1, 1), const glm::vec4 &colorOverlay = glm::vec4(1, 1, 1, 0));
 		virtual glm::vec2 draw(const Font* font, const std::string& text, const glm::mat4 &transform, const glm::vec4 &color = glm::vec4(1, 1, 1, 1));
-		virtual glm::vec2 draw(const Font* font, const std::string& text, const glm::mat4 &transform, const glm::vec4 &color, glm::vec2 &cursor, int wrapWidth = -1);
+		virtual glm::vec2 draw(const Font* font, const std::string& text, const glm::mat4 &transform, const glm::vec4 &color, glm::vec2 &cursor, int wrapWidth = -1, float maxWidth = -1);
 
 		virtual void drawStretchyRect(Texture* sprite, const glm::mat4 &transform, const blib::math::Rectangle &src, const blib::math::Rectangle &innerSrc, const glm::vec2 &size, const glm::vec4 &color = glm::vec4(1,1,1,1));
-		virtual void drawStretchyRect(Texture* sprite, const glm::mat4 &transform, json::Value skin, const glm::vec2 &size, const glm::vec4 &color = glm::vec4(1,1,1,1));
+		virtual void drawStretchyRect(Texture* sprite, const glm::mat4 &transform, json skin, const glm::vec2 &size, const glm::vec4 &color = glm::vec4(1,1,1,1));
 
 
-		virtual void draw(const Texture* sprite, const glm::mat4 &transform, const std::vector<std::pair<glm::vec2, glm::vec2>> &coords, const glm::vec4 &color = glm::vec4(1, 1, 1, 1), const glm::vec4 &colorOverlay = glm::vec4(1,1,1,0));
+		virtual void draw(const Texture* sprite, const glm::mat4 &transform, const std::vector<std::pair<glm::vec2, glm::vec2>> &coords, const glm::vec4 &color = glm::vec4(1, 1, 1, 1), const glm::vec4 &colorOverlay = glm::vec4(1, 1, 1, 0));
+		virtual void draw(const Texture* sprite, const std::vector<std::pair<glm::vec2, glm::vec2>> &coords, const glm::vec4 &color = glm::vec4(1, 1, 1, 1), const glm::vec4 &colorOverlay = glm::vec4(1, 1, 1, 0));
 		virtual void draw(const Texture* sprite, const glm::mat4 &transform, const std::vector<std::tuple<glm::vec2, glm::vec2, glm::vec4>> &coords);
 
-		virtual void resizeGl( int width, int height );
+		virtual void resizeGl( int width, int height, int offsetX, int offsetY );
 
 		inline const glm::mat4& getMatrix() const { return matrix; };
 	};

@@ -269,6 +269,13 @@ namespace blib
 			};
 			addKeyListener(new AppKeyListener(this));
 		}
+		window->addActivateListener([this](bool active)
+		{
+			if (!active)
+			{
+				keyState = KeyState();
+			}
+		});
 
 		{
 			class AppMouseListener : public MouseListener {
@@ -288,9 +295,9 @@ namespace blib
 			App* app;
 		public:
 			Resizer(App* app) { this->app = app; }
-			void resizeGl(int width, int height)
+			void resizeGl(int width, int height, int offsetx, int offsety)
 			{
-				app->renderer->setViewPort(0, 0, width, height);
+				app->renderer->setViewPort(offsetx, offsety, width, height);
 			}
 		};
 		new Resizer(this);
@@ -318,7 +325,7 @@ namespace blib
 		init();
 		Log::out<<"done calling init..."<<Log::newline;
 
-		blib::gl::GlResizeRegister::ResizeRegisteredObjects(window->getWidth(), window->getHeight());
+		blib::gl::GlResizeRegister::ResizeRegisteredObjects(window->getWidth(), window->getHeight(), appSetup.offX, appSetup.offY);
 		frameTimeIndex = 0;
 		running = true;
 	}
@@ -403,6 +410,8 @@ namespace blib
 			renderer->flush();
 			window->swapBuffers();
 
+
+			resourceManager->cleanup();
 		
         }
 	}
@@ -423,6 +432,7 @@ namespace blib
 			app->window->swapBuffers();
 			frameTime = util::Profiler::getAppTime() - frameStart;
 			app->semaphore->signal();
+			app->resourceManager->cleanup();
 		}
 		app->window->unmakeCurrent();
 		app->semaphore->signal();

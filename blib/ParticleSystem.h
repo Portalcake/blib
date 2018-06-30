@@ -174,6 +174,7 @@ namespace blib
 		blib::VIO* vio;
 
 		void clear();
+		void clearParticles();
 		Emitter* addEmitter(std::string name);
 		void removeEmitter(Emitter* emitter);
 
@@ -184,7 +185,7 @@ namespace blib
 
 		inline void setTextureFolder(const std::string &folder) { this->textureFolder = folder; }
 
-		void resizeGl( int width, int height );
+		void resizeGl( int width, int height, int offsetX, int offsetY );
 	};
 
 

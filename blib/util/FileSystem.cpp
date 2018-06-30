@@ -1,6 +1,6 @@
 #include "FileSystem.h"
 #include <blib/util/Log.h>
-#include <blib/json.h>
+#include <blib/json.hpp>
 #include <blib/linq.h>
 #include <fstream>
 #include <iostream>
@@ -206,10 +206,8 @@ namespace blib
 
 		StreamOut* FileSystem::openWrite(const std::string &fileName)
 		{
-			printf("Opening %s\n", fileName.c_str());
 			for (std::list<FileSystemHandler*>::iterator it = handlers.begin(); it != handlers.end(); it++)
 			{
-				printf("Filehandler %s\n", (*it)->name.c_str());
 				StreamOut* stream = (*it)->openWrite(fileName);
 				if (stream)
 					return stream;
@@ -251,16 +249,76 @@ namespace blib
 			return ret;
 		}
 
-		json::Value FileSystem::getJson(const std::string &fileName)
+		json FileSystem::getJson(const std::string &fileName)
 		{
 			std::string data = getData(fileName);
 			if (data == "")
 			{
 				Log::out << "Could not open " << fileName << Log::newline;
-				return json::Value();
+				return json();
 			}
-			return json::readJson(data);
+
+			bool inString = false;
+			bool escape = false;
+			for (size_t i = 0; i < data.size()-1; i++)
+			{
+				if (data[i] == '/' && data[i + 1] == '*' && !inString)
+					data = data.substr(0, i) + data.substr(data.find("*/", i) + 2);
+				if (data[i] == '/' && data[i + 1] == '/' && !inString)
+					data = data.substr(0, i) + data.substr(data.find("\n", i));
+
+				if (inString)
+					if (data[i] == '\n')
+						data = data.substr(0, i-1) + "\\n" + data.substr(i+1);
+				if (inString)
+					if (data[i] == '\t')
+						data = data.substr(0, i) + "    " + data.substr(i + 1);
+				if (data[i] == '"' && !escape)
+					inString = !inString;
+				if (data[i] == '\\')
+					escape = !escape;
+				else
+					escape = false;
+			}
+
+
+			try
+			{
+				return json::parse(data);
+			}
+			catch (json::parse_error &exception)
+			{
+				Log::out << "Can not read json file: " << fileName << ", " << exception.what() << " at " << exception.byte << Log::newline;
+			}
+			return nullptr;
 		}
+
+		json FileSystem::getCbor(const std::string &fileName)
+		{
+			char* data;
+			int len = getData(fileName, data);
+			if (len <= 0)
+			{
+				Log::out << "Could not open " << fileName << Log::newline;
+				return json();
+			}
+
+
+			try
+			{
+				
+				json jdata = json::from_cbor(data, len);
+				delete[] data;
+				return jdata;
+
+			}
+			catch (json::parse_error &exception)
+			{
+				Log::out << "Can not read cbor file: " << fileName << ", " << exception.what() << " at " << exception.byte << Log::newline;
+			}
+			return nullptr;
+		}
+
 
 		std::vector<std::string> FileSystem::getFileList(const std::string &path)
 		{

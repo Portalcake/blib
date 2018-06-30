@@ -8,6 +8,7 @@ namespace blib
 	class AudioSample
 	{
 	public:
+		virtual ~AudioSample() {};
 		bool canOnlyPlayOnce = false;
 
 		virtual void setVolume(int volume) = 0;
@@ -34,6 +35,9 @@ namespace blib
 		virtual AudioSample* loadSample(const std::string &filename) = 0;
 
 		virtual void playSound(std::string filename) = 0;
+
+
+		virtual void stopAllSounds() {};
 
 		virtual void update() {};
 	};

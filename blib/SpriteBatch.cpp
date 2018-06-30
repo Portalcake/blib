@@ -10,7 +10,9 @@
 #include <blib/Math.h>
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <blib/json.h>
+#include <blib/json.hpp>
+#include <locale>
+#include <codecvt>
 
 using blib::util::Log;
 
@@ -187,26 +189,124 @@ namespace blib
 	}
 
 
-	glm::vec2 SpriteBatch::draw(const Font* font, const std::string &text, const glm::mat4 &transform, const glm::vec4 &color, glm::vec2 &cursor, int wrapWidth)
+	glm::vec2 SpriteBatch::draw(const Font* font, const std::string &utf8, const glm::mat4 &transform, const glm::vec4 &color, glm::vec2 &cursor, int wrapWidth, float maxWidth)
 	{
 		glm::vec2 texFactor(1.0f / font->texture->width, 1.0f / font->texture->height);
+
+		float scaleFactor = 1.0f;
 
 		float x = cursor.x;
 		float y = cursor.y;
 		int lineHeight = 12;
+#ifdef BLIB_IOS
+        std::u32string text = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>{}.from_bytes(utf8);
+        std::u32string space = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>{}.from_bytes(" ");
+		typedef char32_t ch;
+        typedef std::u32string str;
+#else
+		auto UTF8toISO8859_1 = [](const char * in)
+		{
+			std::string out;
+			if (in == NULL)
+				return out;
+
+			unsigned int codepoint;
+			while (*in != 0)
+			{
+				unsigned char ch = static_cast<unsigned char>(*in);
+				if (ch <= 0x7f)
+					codepoint = ch;
+				else if (ch <= 0xbf)
+					codepoint = (codepoint << 6) | (ch & 0x3f);
+				else if (ch <= 0xdf)
+					codepoint = ch & 0x1f;
+				else if (ch <= 0xef)
+					codepoint = ch & 0x0f;
+				else
+					codepoint = ch & 0x07;
+				++in;
+				if (((*in & 0xc0) != 0x80) && (codepoint <= 0x10ffff))
+				{
+					if (codepoint <= 255)
+					{
+						out.append(1, static_cast<char>(codepoint));
+					}
+					else
+					{
+						// do whatever you want for out-of-bounds characters
+					}
+				}
+			}
+			return out;
+		};
+
+        std::string text = this->utf8 ? UTF8toISO8859_1(utf8.c_str()) : utf8;
+        std::string space = " ";
+        typedef std::string str;
+		typedef unsigned char ch;
+#endif
+
+		if (maxWidth > 0)
+		{
+			float len = 0;
+			for (size_t i = 0; i < text.size(); i++)
+			{
+				if (font->charmap.find(text[i]) != font->charmap.end())
+					len += font->getGlyph(text[i])->xadvance;
+			}
+
+			len = (transform * glm::vec4(len, 0, 0, 1)).x;
+			if (len > maxWidth)
+			{
+				scaleFactor = maxWidth / len;
+			}
+
+		}
+
 		for(size_t i = 0; i < text.size(); i++)
 		{
-			if (text[i] == '\n' || (x > wrapWidth && wrapWidth != -1))
+			ch c = text[i];
+			if (c == ' ')
+			{
+              //  if (text.find(space, i+1) != std::string::npos || y != cursor.y)
+				{
+					str word = text.substr(i+1);
+					if (word.find(space) != std::string::npos)
+						word = word.substr(0, word.find(space));
+//					int start = i > 0 && text.rfind(space, i - 1) != std::string::npos ? text.rfind(space, i - 1) + 1 : 0;
+//					str word = text.substr(start, text.find(space, i+1) - start);
+					int wordLength = 0;
+					for (size_t ii = 0; ii < word.length(); ii++)
+						if (font->charmap.find(word[ii]) != font->charmap.end())
+						wordLength += font->getGlyph(word[ii])->xadvance;
+					if (x + wordLength > wrapWidth && wrapWidth != -1)
+					{
+						//i++; //skip space
+						x = 0;
+						y += lineHeight;
+						lineHeight = 12;
+						continue;
+					}
+				}
+			}
+
+			if (c == '\n' || (x > wrapWidth && wrapWidth != -1))
 			{
 				x = 0;
 				y += lineHeight;
 				lineHeight = 12;
 			}
-			if(font->charmap.find(text[i]) == font->charmap.end())
+			if (c == '\t')
+			{
+				x = ceil((x + tabsize) / tabsize) * tabsize;
 				continue;
-			const Glyph* g = font->getGlyph(text[i]);
-			lineHeight = glm::max(lineHeight, g->height);
-			draw(font->texture, glm::translate(transform, glm::vec3(x+g->xoffset,y+g->yoffset,0)), glm::vec2(0,0), blib::math::Rectangle(g->x*texFactor.x,g->y*texFactor.y,g->width*texFactor.x,g->height*texFactor.y), color);
+			}
+
+			if(font->charmap.find(c) == font->charmap.end())
+				continue;
+			const Glyph* g = font->getGlyph(c);
+			lineHeight = glm::max(lineHeight, g->height + g->yoffset);
+			draw(font->texture, glm::translate(glm::scale(transform, glm::vec3(scaleFactor, scaleFactor, 1)), glm::vec3(x+g->xoffset,y+g->yoffset,0)), glm::vec2(0,0), blib::math::Rectangle(g->x*texFactor.x,g->y*texFactor.y,g->width*texFactor.x,g->height*texFactor.y), color);
 
 			x+=g->xadvance;
 		}
@@ -223,6 +323,17 @@ namespace blib
 		for (const std::pair<glm::vec2, glm::vec2> &coord : coords)
 			vertices.push_back(vertexDef(glm::vec2(transform * glm::vec4(coord.first,0,1)), coord.second, color, colorOverlay));
 	}
+
+	void SpriteBatch::draw(const Texture* texture, const std::vector<std::pair<glm::vec2, glm::vec2>> &coords, const glm::vec4 &color /*= glm::vec4(1,1,1,1)*/, const glm::vec4 &colorOverlay)
+	{
+		if (currentTexture != texture && currentTexture != NULL)
+			materialIndices.push_back(std::pair<const Texture*, unsigned short>(currentTexture, (unsigned short)vertices.size()));
+		currentTexture = texture;
+
+		for (const std::pair<glm::vec2, glm::vec2> &coord : coords)
+			vertices.push_back(vertexDef(glm::vec2(glm::vec4(coord.first, 0, 1)), coord.second, color, colorOverlay));
+	}
+
 
 	void SpriteBatch::draw(const Texture* texture, const glm::mat4 &transform, const std::vector<std::tuple<glm::vec2, glm::vec2, glm::vec4>> &coords)
 	{
@@ -258,13 +369,13 @@ namespace blib
 		draw(sprite, glm::scale(glm::translate(transform, glm::vec3(marginTopLeft,0)), glm::vec3(facWidth,facHeight,1)), glm::vec2(0,0), blib::math::Rectangle(innerSrc.topleft * factor, innerSrc.bottomright * factor), color); //center
 	}
 
-	void SpriteBatch::drawStretchyRect(Texture* sprite, const glm::mat4 &transform, json::Value skin, const glm::vec2 &size, const glm::vec4 &color)
+	void SpriteBatch::drawStretchyRect(Texture* sprite, const glm::mat4 &transform, json skin, const glm::vec2 &size, const glm::vec4 &color)
 	{
 		drawStretchyRect(
 			sprite, 
 			transform, 
-			blib::math::Rectangle(glm::vec2(skin["left"]["pos"].asInt(), skin["top"]["pos"].asInt()), glm::vec2(skin["right"]["pos"].asInt() + skin["right"]["width"].asInt(), skin["bottom"]["pos"].asInt() + skin["bottom"]["height"].asInt())), 
-			blib::math::Rectangle(glm::vec2(skin["left"]["pos"].asInt()+skin["left"]["width"].asInt(), skin["top"]["pos"].asInt()+skin["top"]["height"].asInt()), glm::vec2(skin["right"]["pos"].asInt(), skin["bottom"]["pos"].asInt())), 
+			blib::math::Rectangle(glm::vec2(skin["left"]["pos"].get<int>(), skin["top"]["pos"].get<int>()), glm::vec2(skin["right"]["pos"].get<int>() + skin["right"]["width"].get<int>(), skin["bottom"]["pos"].get<int>() + skin["bottom"]["height"].get<int>())), 
+			blib::math::Rectangle(glm::vec2(skin["left"]["pos"].get<int>()+skin["left"]["width"].get<int>(), skin["top"]["pos"].get<int>()+skin["top"]["height"].get<int>()), glm::vec2(skin["right"]["pos"].get<int>(), skin["bottom"]["pos"].get<int>())), 
 			size, 
 			color);
 	}
@@ -277,7 +388,7 @@ namespace blib
 		cacheStart = vertices.size();
 	}
 
-	SpriteBatch::Cache* SpriteBatch::getCache()
+	SpriteBatch::Cache* SpriteBatch::getCache(bool removeFromRenderQueue)
 	{
 		assert(cacheActive);
 		assert(active);
@@ -290,15 +401,28 @@ namespace blib
 			return cache;
 		}
 
+
 		cache->verts.insert(cache->verts.begin(), vertices.begin() + cacheStart, vertices.end());
+		cache->materialIndices = materialIndices;
+
 		std::pair<const Texture*, unsigned short> p(currentTexture, (unsigned short)vertices.size());
 		cache->materialIndices.push_back(p);
 
-		for(size_t i = 0; i < cache->materialIndices.size(); i++)
-			cache->materialIndices[i].second -= (unsigned short)cacheStart;
-		while(!cache->materialIndices.empty() && cache->materialIndices[0].second < 0)
+		while (!cache->materialIndices.empty() && cache->materialIndices[0].second < cacheStart)
 			cache->materialIndices.erase(cache->materialIndices.begin());
-			
+		
+		for (size_t i = 0; i < cache->materialIndices.size(); i++)
+			cache->materialIndices[i].second -= (unsigned short)cacheStart;
+
+		if (removeFromRenderQueue)
+		{
+			vertices.resize(cacheStart);
+			materialIndices.erase(std::remove_if(materialIndices.begin(),
+				materialIndices.end(),
+				[this](const std::pair<const Texture*, unsigned short> &x) {return x.second > cacheStart; }),
+				materialIndices.end());
+		}
+
 
 		return cache;
 	}
@@ -333,16 +457,18 @@ namespace blib
 	}
 
 
-	void SpriteBatch::resizeGl( int width, int height )
+	void SpriteBatch::resizeGl( int width, int height, int offsetX, int offsetY )
 	{
 		if (renderState.activeShader == shader)
-			renderState.activeShader->setUniform(ProjectionMatrix, glm::ortho(0.0f, (float)width, (float)height, 0.0f, -1000.0f, 1.0f));
+			renderState.activeShader->setUniform(ProjectionMatrix, glm::ortho((float)offsetX, (float)width+offsetX, (float)height+offsetY, (float)offsetY, -1000.0f, 1.0f));
 	}
 
 	SpriteBatch::Cache::~Cache()
 	{
 		verts.clear();
 		materialIndices.clear();
+		if (vbo)
+			blib::ResourceManager::getInstance().dispose(vbo);
 	}
 
 
@@ -358,13 +484,13 @@ namespace blib
 		spriteBatch.renderer->setVbo(vbo, verts);
 	}
 
-	void SpriteBatch::Cache::drawVbo(SpriteBatch& spriteBatch)
+	void SpriteBatch::Cache::drawVbo(SpriteBatch& spriteBatch, const glm::mat4 &mat)
 	{
 		blib::RenderState renderState = spriteBatch.renderState;
 		renderState.activeVbo = vbo;
 		int lastIndex = 0;
 		if (renderState.activeShader == spriteBatch.shader)
-			renderState.activeShader->setUniform(Matrix, spriteBatch.matrix);
+			renderState.activeShader->setUniform(Matrix, spriteBatch.matrix * mat);
 		for (size_t i = 0; i < materialIndices.size(); i++)
 		{
 			renderState.activeTexture[0] = const_cast<Texture*>(materialIndices[i].first);

@@ -31,6 +31,8 @@ namespace blib
 
 		TextureMap::~TextureMap()
 		{
+			for (auto t : toLoad)
+				stbi_image_free(t->data);
 			assert(taken);
 			delete[] taken;
 			glDeleteTextures(1, &texid);
@@ -103,6 +105,7 @@ namespace blib
 					if(yoffset >= height/32)
 					{
 						Log::out<<"No more room on texture map"<<Log::newline;
+						Log::out << "Loading texture " << filename << Log::newline;
 						return NULL;
 					}
 				}

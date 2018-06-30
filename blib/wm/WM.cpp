@@ -120,7 +120,7 @@ namespace blib
 						continue;
 					glm::mat4 matrix;
 					matrix = glm::translate(matrix, glm::vec3(radialMenuPosition, 0));
-					matrix = glm::rotate(matrix, index * 45.0f, glm::vec3(0, 0, 1));
+					matrix = glm::rotate(matrix, glm::radians(index * 45.0f), glm::vec3(0, 0, 1));
 					matrix = glm::translate(matrix, glm::vec3(-120, 0, 0));
 					matrix = glm::scale(matrix, glm::vec3(0.75f, 0.75f, 1.0f));
 					matrix = glm::translate(matrix, glm::vec3(0, -16, 0));
@@ -174,8 +174,12 @@ namespace blib
 						if (mouseState.position.x > item.first.x && mouseState.position.x < item.first.x + 200 && mouseState.position.y > item.first.y + 16 * iii && mouseState.position.y < item.first.y + 16 + 16 * iii)
 							spriteBatch.drawStretchyRect(skinTexture, blib::math::easyMatrix(glm::vec2(item.first.x - 2, item.first.y + 16*iii)), skin["list"], glm::vec2(200, 16), glm::vec4(0.5f, 0.5f, 0.9f, 1.0f));
 
+						std::string text = item.second->menuItems[iii]->title;
+						if(dynamic_cast<ToggleMenuItem*>(item.second->menuItems[iii]))
+							if(dynamic_cast<ToggleMenuItem*>(item.second->menuItems[iii])->getValue())
+								spriteBatch.draw(font, "x", blib::math::easyMatrix(glm::vec2(item.first.x + 2, item.first.y + 2 + 16 * iii)), glm::vec4(0, 0, 0, 1));
 
-						spriteBatch.draw(font, item.second->menuItems[iii]->title, blib::math::easyMatrix(glm::vec2(item.first.x + 2, item.first.y + 2 + 16 * iii)), glm::vec4(0, 0, 0, 1));
+						spriteBatch.draw(font, item.second->menuItems[iii]->title, blib::math::easyMatrix(glm::vec2(item.first.x + 20, item.first.y + 2 + 16 * iii)), glm::vec4(0, 0, 0, 1));
 						iii++;
 					}
 				}
@@ -203,11 +207,11 @@ namespace blib
 		void WM::setSkin( std::string skinFile, ResourceManager* resourceManager )
 		{
 			skin = util::FileSystem::getJson(skinFile);
-			if (skin.isMember("texture"))
-				skinTexture = resourceManager->getResource<Texture>(skin["texture"].asString());
+			if (skin.find("texture") != skin.end())
+				skinTexture = resourceManager->getResource<Texture>(skin["texture"].get<std::string>());
 			font = resourceManager->getResource<Font>("tahoma");
-			if (skin.isMember("radialfont"))
-				radialmenufont = resourceManager->getResource<Font>(skin["radialfont"].asString());
+			if (skin.find("radialfont") != skin.end())
+				radialmenufont = resourceManager->getResource<Font>(skin["radialfont"].get<std::string>());
 		}
 
 		void WM::setFont( Font* font )
@@ -235,9 +239,9 @@ namespace blib
 			tasks.push_back(task);
 		}
 
-		blib::wm::Menu* WM::loadMenu( std::string filename, const blib::json::Value &translation )
+		blib::wm::Menu* WM::loadMenu( std::string filename, const json &translation )
 		{
-			json::Value menuData = blib::util::FileSystem::getJson(filename);
+			json menuData = blib::util::FileSystem::getJson(filename);
 
 			Menu* root = new Menu(menuData);
 
@@ -245,7 +249,7 @@ namespace blib
 			{
 				auto item = root->getItem(it.key());
 				if(item)
-					item->title = it.value().asString()	;
+					item->title = it.value().get<std::string>()	;
 			}
 			
 
@@ -336,7 +340,7 @@ namespace blib
 			}
 			for (size_t i = 0; i < popupMenus.size(); i++)
 			{
-				std::pair<glm::vec2, Menu*>& item = popupMenus[i];
+				std::pair<glm::vec2, Menu*> item = popupMenus[i];
 
 				if (x > item.first.x && x < item.first.x + 200 &&
 					y > item.first.y && y < item.first.y + 16 * item.second->menuItems.size())
@@ -586,8 +590,8 @@ namespace blib
 					if (w->inWindow(x, y) && w->visible && w->selectedWidget)
 					{
 						w->selectedWidget->onDrag(
-							x - w->x - w->selectedWidget->absoluteX() - WM::getInstance()->skin["window"]["offsets"]["left"].asInt(), 
-							y - w->y - w->selectedWidget->absoluteY() - WM::getInstance()->skin["window"]["offsets"]["top"].asInt());
+							x - w->x - w->selectedWidget->absoluteX() - WM::getInstance()->skin["window"]["offsets"]["left"].get<int>(), 
+							y - w->y - w->selectedWidget->absoluteY() - WM::getInstance()->skin["window"]["offsets"]["top"].get<int>());
 						handled = true;
 						break;
 					}
@@ -657,6 +661,12 @@ namespace blib
 
 			if (menuKeys.find(key) != menuKeys.end())
 			{
+				{
+					auto item = menuKeys[key];
+					if (!this->menuBar->isEnabled(item))
+						return false;
+				}
+
 				bool ret = false;
 				{
 					ToggleMenuItem* item = dynamic_cast<ToggleMenuItem*>(menuKeys[key]);
@@ -724,7 +734,7 @@ namespace blib
 			return false;
 		}
 
-		void WM::resizeGl(int width, int height)
+		void WM::resizeGl(int width, int height, int offsetx, int offsety)
 		{
 			screenSize.x = width;
 			screenSize.y = height;

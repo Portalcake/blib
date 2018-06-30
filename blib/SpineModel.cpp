@@ -88,26 +88,47 @@ namespace blib
 
 	void SpineModelInstance::playAnimation(const std::string &name, bool loop)
 	{
+		lastAnimation = name;
 		spAnimationState_setAnimationByName(state, 0, name.c_str(), loop);
+		update(0);
+	}
+
+	void SpineModelInstance::playAnimationOnTrack(const std::string &name, int track, bool loop)
+	{
+		lastAnimation = name;
+		spAnimationState_setAnimationByName(state, track, name.c_str(), loop);
 		update(0);
 	}
 
 	void SpineModelInstance::playAnimation(const std::string &name, const std::function<void()> &callback)
 	{
+		lastAnimation = name;
 		fixedTime = -1;
 		spAnimationState_setAnimationByName(state, 0, name.c_str(), false);
 		update(0);
 		this->callback = callback;
 	}
 
-	void SpineModelInstance::stopAnimation(const std::string &name)
+	void SpineModelInstance::stopAnimation(const std::string &name, bool reset)
 	{
+		lastAnimation = "";
 		spAnimationState_clearTrack(state, 0);
+		if(reset)
+			spSkeleton_setToSetupPose(skeleton);
+		update(0);
+	}
+
+	void SpineModelInstance::stopAnimationOnTrack(const std::string &name, int track)
+	{
+		lastAnimation = "";
+		spAnimationState_clearTrack(state, track);
+		update(0);
 	}
 
 	bool SpineModelInstance::isPlaying()
 	{
-		return spAnimationState_getCurrent(state, 0) != NULL;
+		auto s = spAnimationState_getCurrent(state, 0);
+		return s && s->trackTime < s->animationEnd;
 	}
 
 	void SpineModelInstance::setAnimation(const std::string &name, float time)
@@ -139,28 +160,28 @@ namespace blib
 
 		if (attachment->type == SP_ATTACHMENT_REGION) {
 			spRegionAttachment* regionAttachment = (spRegionAttachment*)attachment;
-			spRegionAttachment_computeWorldVertices(regionAttachment, slot->bone, worldVertices);
+			spRegionAttachment_computeWorldVertices(regionAttachment, slot->bone, worldVertices, 0, 2);
 			static const int indices[] = {
-				SP_VERTEX_X1, SP_VERTEX_Y1,
-				SP_VERTEX_X2, SP_VERTEX_Y2,
-				SP_VERTEX_X3, SP_VERTEX_Y3,
-				SP_VERTEX_X4, SP_VERTEX_Y4
+				0, 1,
+				2, 3,
+				4, 5,
+				6, 7
 			};
 
 			for (int ii = 0; ii < 4; ii++)
 				ret.push_back(glm::vec2(worldVertices[indices[2 * ii + 0]], worldVertices[indices[2 * ii + 1]]));
 		}
-		else if (attachment->type == SP_ATTACHMENT_MESH) {
+		/*else if (attachment->type == SP_ATTACHMENT_MESH) {
 			spMeshAttachment* mesh = (spMeshAttachment*)attachment;
-			spMeshAttachment_computeWorldVertices(mesh, slot, worldVertices);
+			spMeshAttachment_computeWorldVertices(mesh, slot, worldVertices, 0, 2);
 
 			for (int i = 0; i < mesh->trianglesCount; ++i) {
 				int index = mesh->triangles[i] << 1;
 				ret.push_back(glm::vec2(worldVertices[index], worldVertices[index + 1]));
 			}
 
-		}
-		else if (attachment->type == SP_ATTACHMENT_SKINNED_MESH) {
+		}*/
+		/*else if (attachment->type == SP_ATTACHMENT_SKINNED_MESH) {
 			spSkinnedMeshAttachment* mesh = (spSkinnedMeshAttachment*)attachment;
 			spSkinnedMeshAttachment_computeWorldVertices(mesh, slot, worldVertices);
 
@@ -168,7 +189,7 @@ namespace blib
 				int index = mesh->triangles[i] << 1;
 				ret.push_back(glm::vec2(worldVertices[index], worldVertices[index + 1]));
 			}
-		}
+		}*/
 
 
 
@@ -195,15 +216,15 @@ namespace blib
 
 		if (attachment->type == SP_ATTACHMENT_REGION) {
 			spRegionAttachment* regionAttachment = (spRegionAttachment*)attachment;
-			spRegionAttachment_computeWorldVertices(regionAttachment, slot->bone, worldVertices);
+			spRegionAttachment_computeWorldVertices(regionAttachment, slot->bone, worldVertices,0,2);
 
 			ret.first = (Texture*)((spAtlasRegion*)regionAttachment->rendererObject)->page->rendererObject;
 
 			static const int indices[] = {
-				SP_VERTEX_X1, SP_VERTEX_Y1,
-				SP_VERTEX_X2, SP_VERTEX_Y2,
-				SP_VERTEX_X3, SP_VERTEX_Y3,
-				SP_VERTEX_X4, SP_VERTEX_Y4
+				0, 1,
+				2, 3,
+				4, 5,
+				6, 7
 			};
 
 			for (int ii = 0; ii < 4; ii++)
@@ -213,7 +234,7 @@ namespace blib
 					glm::vec2(regionAttachment->uvs[indices[2 * ii + 0]], regionAttachment->uvs[indices[2 * ii + 1]])));
 			}
 		}
-		else if (attachment->type == SP_ATTACHMENT_MESH) {
+		/*else if (attachment->type == SP_ATTACHMENT_MESH) {
 			spMeshAttachment* mesh = (spMeshAttachment*)attachment;
 			spMeshAttachment_computeWorldVertices(mesh, slot, worldVertices);
 			ret.first = (Texture*)((spAtlasRegion*)mesh->rendererObject)->page->rendererObject;
@@ -223,8 +244,8 @@ namespace blib
 				ret.second.push_back(std::pair<glm::vec2, glm::vec2>(glm::vec2(worldVertices[index], worldVertices[index + 1]), glm::vec2(mesh->uvs[index], mesh->uvs[index + 1])));
 			}
 
-		}
-		else if (attachment->type == SP_ATTACHMENT_SKINNED_MESH) {
+		}*/
+/*		else if (attachment->type == SP_ATTACHMENT_SKINNED_MESH) {
 			spSkinnedMeshAttachment* mesh = (spSkinnedMeshAttachment*)attachment;
 			spSkinnedMeshAttachment_computeWorldVertices(mesh, slot, worldVertices);
 			ret.first = (Texture*)((spAtlasRegion*)mesh->rendererObject)->page->rendererObject;
@@ -233,7 +254,7 @@ namespace blib
 				int index = mesh->triangles[i] << 1;
 				ret.second.push_back(std::pair<glm::vec2, glm::vec2>(glm::vec2(worldVertices[index], worldVertices[index + 1]), glm::vec2(mesh->uvs[index], mesh->uvs[index + 1])));
 			}
-		}
+		}*/
 		return ret;
 	}
 
@@ -276,23 +297,6 @@ namespace blib
 			if (!attachment) continue;
 
 
-			/*			switch (slot->data->blendMode) {
-			case BLEND_MODE_ADDITIVE:
-			blend = BlendAdd;
-			break;
-			case BLEND_MODE_MULTIPLY:
-			blend = BlendMultiply;
-			break;
-			case BLEND_MODE_SCREEN: // Unsupported, fall through.
-			default:
-			blend = BlendAlpha;
-			}
-			if (states.blendMode != blend) {
-			target.draw(*vertexArray, states);
-			vertexArray->clear();
-			states.blendMode = blend;
-			}*/
-
 			Texture* texture = 0;
 
 
@@ -303,14 +307,18 @@ namespace blib
 			if (attachment->type == SP_ATTACHMENT_REGION) {
 				spRegionAttachment* regionAttachment = (spRegionAttachment*)attachment;
 				texture = (Texture*)((spAtlasRegion*)regionAttachment->rendererObject)->page->rendererObject;
-				spRegionAttachment_computeWorldVertices(regionAttachment, slot->bone, worldVertices);
-				color = glm::vec4(skeleton->r * slot->r, skeleton->g * slot->g, skeleton->b * slot->b, skeleton->a * slot->a);
+				spRegionAttachment_computeWorldVertices(regionAttachment, slot->bone, worldVertices,0,2);
+				color = glm::vec4(
+					skeleton->color.r * slot->color.r, 
+					skeleton->color.g * slot->color.g, 
+					skeleton->color.b * slot->color.b, 
+					skeleton->color.a * slot->color.a);
 
 				static const int indices[] = {
-					SP_VERTEX_X1, SP_VERTEX_Y1,
-					SP_VERTEX_X2, SP_VERTEX_Y2,
-					SP_VERTEX_X3, SP_VERTEX_Y3,
-					SP_VERTEX_X4, SP_VERTEX_Y4
+					0, 1,
+					2, 3,
+					4, 5,
+					6, 7
 				};
 
 				static const int vertIndices[] = { 0, 1, 2, 0, 2, 3 };
@@ -322,9 +330,9 @@ namespace blib
 						glm::vec2(regionAttachment->uvs[indices[2 * vertIndices[ii] + 0]], regionAttachment->uvs[indices[2 * vertIndices[ii] + 1]])));
 				}
 			}
-			else if (attachment->type == SP_ATTACHMENT_MESH) {
+			/*else if (attachment->type == SP_ATTACHMENT_MESH) {
 				spMeshAttachment* mesh = (spMeshAttachment*)attachment;
-				if (mesh->verticesCount > SPINE_MESH_VERTEX_COUNT_MAX) continue;
+				if (mesh->trianglesCount*3 > SPINE_MESH_VERTEX_COUNT_MAX) continue;
 				texture = (Texture*)((spAtlasRegion*)mesh->rendererObject)->page->rendererObject;
 				spMeshAttachment_computeWorldVertices(mesh, slot, worldVertices);
 
@@ -334,8 +342,12 @@ namespace blib
 					verts.push_back(std::pair<glm::vec2, glm::vec2>(glm::vec2(worldVertices[index], worldVertices[index + 1]), glm::vec2(mesh->uvs[index], mesh->uvs[index + 1])));
 				}
 
+			}*/
+			else
+			{
+				Log::out << "Unknown attachment type: " << attachment->type << Log::newline;
 			}
-			else if (attachment->type == SP_ATTACHMENT_SKINNED_MESH) {
+/*			else if (attachment->type == SP_ATTACHMENT_SKINNED_MESH) {
 				spSkinnedMeshAttachment* mesh = (spSkinnedMeshAttachment*)attachment;
 				if (mesh->uvsCount > SPINE_MESH_VERTEX_COUNT_MAX) continue;
 				texture = (Texture*)((spAtlasRegion*)mesh->rendererObject)->page->rendererObject;
@@ -347,7 +359,7 @@ namespace blib
 					int index = mesh->triangles[i] << 1;
 					verts.push_back(std::pair<glm::vec2, glm::vec2>(glm::vec2(worldVertices[index], worldVertices[index + 1]), glm::vec2(mesh->uvs[index], mesh->uvs[index + 1])));
 				}
-			}
+			}*/
 
 			spriteBatch.draw(texture, transform, verts, color);
 		}

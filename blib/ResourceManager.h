@@ -3,6 +3,7 @@
 #include <functional>
 #include <string>
 #include <map>
+#include <list>
 #include <blib/VBO.h>
 
 #include <blib/Texture.h>
@@ -45,12 +46,15 @@ namespace blib
 		};
 
 	public:
+		std::list<std::pair<int, Resource*> > toDelete;
 		std::map<Resource*, int> resources;
 		virtual Resource* regResource(Resource* resource);
 		virtual void dispose(Resource* resource);
 
 		static ResourceManager& getInstance();
 
+
+		void cleanup();
 
 		ResourceManager();
 		virtual ~ResourceManager();
@@ -101,15 +105,24 @@ namespace blib
 	{
 		return renderer();
 	}
+
+	extern std::map<std::string, Texture*> textureCache;
+
 	template<>
 	inline Texture* ResourceManager::getResource<Texture>(int loadOptions, const std::string &name)
 	{
-		return (Texture*)regResource(texture(name, loadOptions));
+		if (textureCache.find(name) == textureCache.end())
+			textureCache[name] = texture(name, loadOptions);
+		return (Texture*)regResource(textureCache[name]);
 	}
+
+
 	template<>
 	inline Texture* ResourceManager::getResource<Texture>(const std::string &name)
 	{
-		return (Texture*)regResource(texture(name, 0));
+		if (textureCache.find(name) == textureCache.end())
+			textureCache[name] = texture(name, 0);
+		return (Texture*)regResource(textureCache[name]);
 	}
 	template<>
 	inline Texture* ResourceManager::getResource<Texture>(int width, int height)

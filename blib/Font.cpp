@@ -84,6 +84,11 @@ namespace blib
 				textureFileName = line.substr(16);
 				textureFileName = textureFileName.substr(0, textureFileName.length()-1);
 			}
+			if (line.substr(0, 6) == "common")
+			{
+				std::vector<std::string> params = split(line.substr(7), " ");
+				lineHeight = atoi(params[0].substr(11).c_str());
+			}
 			if(line.substr(0, 5) == "char ")
 			{
 				std::vector<std::string> params = split(line.substr(5), " ");
@@ -122,14 +127,14 @@ namespace blib
 	Font::~Font()
 	{
 		blib::ResourceManager::getInstance().dispose(texture);
-		for(std::map<char, Glyph*>::iterator it = charmap.begin(); it != charmap.end(); it++)
+		for(std::map<int, Glyph*>::iterator it = charmap.begin(); it != charmap.end(); it++)
 			delete it->second;
 		charmap.clear();
 	}
 
 
 	
-	float Font::textlen(std::string text)
+	float Font::textlen(const std::string &text) const
 	{
 		float scale = 1;//0.00075f;
 
@@ -139,14 +144,13 @@ namespace blib
 		{
 			if(charmap.find(text[i]) == charmap.end())
 				continue;
-			Glyph* g = charmap[text[i]];
-			posX += g->xadvance * scale;
+			posX += getGlyph(text[i])->xadvance * scale;
 
 		}
 		return posX;
 	}
 
-	const Glyph* Font::getGlyph( const char &character ) const
+	const Glyph* Font::getGlyph( const int &character ) const
 	{
 		return charmap.find(character)->second;
 	}

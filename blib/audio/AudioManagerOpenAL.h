@@ -9,8 +9,10 @@
 
 #ifdef BLIB_IOS
 #include <OpenAL/al.h>
+#include <OpenAL/alc.h>
 #else
 #include <al/al.h>
+#include <al/alc.h>
 #endif
 
 namespace blib
@@ -52,7 +54,10 @@ namespace blib
 
 		bool looping;
 		bool playing;
+        int volume = 100;
 
+
+		~OpenALAudioSample();
 		virtual void play(bool loop) override;
 		virtual void stop() override;
 		virtual bool isPlaying() override;
@@ -65,6 +70,7 @@ namespace blib
 	class AudioManagerOpenAL : public AudioManager
 	{
 	public:
+		ALCdevice *device;
 		std::mutex mutex;
 		std::vector<Source> sources;
 		std::vector<OpenALAudioSample*> samples;
@@ -74,17 +80,18 @@ namespace blib
 		std::thread backgroundThread;
 		AudioManagerOpenAL();
 		virtual ~AudioManagerOpenAL();
-		virtual void init();
-		virtual void playMusic( std::string filename );
-		virtual void stopMusic();
-		virtual void playSound( std::string filename );
-		virtual AudioSample* loadSample(const std::string &filename);
+		virtual void init() override;
+		virtual void playMusic( std::string filename ) override;
+		virtual void stopMusic() override;
+		virtual void playSound( std::string filename ) override;
+		virtual AudioSample* loadSample(const std::string &filename) override;
 
 		virtual OpenALAudioSample* loadSampleWav(const std::string &filename);
 		virtual OpenALAudioSample* loadSampleOgg(const std::string &filename);
 
 		Source* getFreeSource();
+		virtual void stopAllSounds() override;
 
-		virtual void update(); //TODO: move to background thread
+		virtual void update() override; //TODO: move to background thread
 	};
 }

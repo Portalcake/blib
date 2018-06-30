@@ -10,7 +10,7 @@
 #include <blib/Math.h>
 #include <blib/util/Log.h>
 #include <blib/SpriteBatch.h>
-#include <blib/json.h>
+#include <blib/json.hpp>
 
 using blib::util::Log;
 
@@ -48,7 +48,8 @@ namespace blib
 		shader->setUniformName(ShaderUniforms::matrix, "matrix", Shader::Mat4);
 		shader->finishUniformSetup();
 		shader->setUniform(ShaderUniforms::s_texture, 0);
-		shader->setUniform(ShaderUniforms::projectionmatrix, glm::ortho(0.0f, (float)1024, (float)768, 0.0f, -1000.0f, 1.0f));
+//        renderState.activeShader->setUniform(ShaderUniforms::projectionmatrix, glm::ortho((float)offsetX, (float)width + offsetX, (float)height + offsetY, (float)offsetY, -1000.0f, 1.0f));
+        shader->setUniform(ShaderUniforms::projectionmatrix, glm::ortho((float)blib::gl::GlResizeRegister::offx, (float)blib::gl::GlResizeRegister::width + blib::gl::GlResizeRegister::offx, (float)blib::gl::GlResizeRegister::height + blib::gl::GlResizeRegister::offy, (float)	blib::gl::GlResizeRegister::offy, -1000.0f, 1.0f));
 		renderState.activeShader = shader;
 		renderState.activeTexture[0] = textureMap;
 		renderState.cullFaces = RenderState::CullFaces::NONE;
@@ -90,6 +91,10 @@ namespace blib
 	{
 	//	if (elapsedTime > 3 * lastElapsedTime)
 	//		elapsedTime = lastElapsedTime;
+
+
+		int total = 0;
+
 		for(std::list<Emitter*>::iterator it = emitters.begin(); it != emitters.end(); it++)
 		{
 			Emitter* emitter = *it;
@@ -99,14 +104,19 @@ namespace blib
 				emitter->counter += elapsedTime;
 				continue;
 			}
-			for(int i = (int)glm::floor(emitter->counter * emitter->emitterTemplate->particleCountPerSecondMin); i < (int)glm::floor((emitter->counter + elapsedTime) * emitter->emitterTemplate->particleCountPerSecondMin); i++)
+
+			total++;
+
+			for(int i = (int)glm::floor(emitter->counter * emitter->emitterTemplate->particleCountPerSecondMin); 
+				i < (int)glm::floor((emitter->counter + elapsedTime) * emitter->emitterTemplate->particleCountPerSecondMin); i++)
+			//for(int i = 0; i < 10; i++)
 			{
                 if(nParticlesAdd < MAX_PARTICLES-1)
-				if (emitter->emitterTemplate->blendMode == EmitterTemplate::Add)
-					emitter->newParticle(addParticles[nParticlesAdd++], elapsedTime);
+					if (emitter->emitterTemplate->blendMode == EmitterTemplate::Add)
+						emitter->newParticle(addParticles[nParticlesAdd++], elapsedTime);
                 if(nParticlesAlpha < MAX_PARTICLES-1)
-				if (emitter->emitterTemplate->blendMode == EmitterTemplate::Alpha)
-					emitter->newParticle(alphaParticles[nParticlesAlpha++], elapsedTime);
+					if (emitter->emitterTemplate->blendMode == EmitterTemplate::Alpha)
+						emitter->newParticle(alphaParticles[nParticlesAlpha++], elapsedTime);
 			}
 			emitter->prevPosition = emitter->position;
 			emitter->counter += elapsedTime;
@@ -124,12 +134,12 @@ namespace blib
 			}
 		}
 
+		if (nParticlesAdd >= MAX_PARTICLES * 0.95 || nParticlesAlpha >= MAX_PARTICLES * 0.95)
+			Log::out << "Too Many Particles!: Total nr of emitters enabled: " << total << ", total particles: " << nParticlesAdd << ",\t"<< nParticlesAlpha << Log::newline;
+		
 
 		updateParticles(addParticles, nParticlesAdd, elapsedTime);
 		updateParticles(alphaParticles, nParticlesAlpha, elapsedTime);
-
-
-
 		lastElapsedTime = elapsedTime;
 	}
 
@@ -309,9 +319,14 @@ namespace blib
 	{
 		nParticlesAdd = 0;
 		nParticlesAlpha = 0;
-		for(std::list<Emitter*>::iterator it = emitters.begin(); it != emitters.end(); it++)
-			delete *it;	
+		for (std::list<Emitter*>::iterator it = emitters.begin(); it != emitters.end(); it++)
+			delete *it;
 		emitters.clear();
+	}
+	void ParticleSystem::clearParticles()
+	{
+		nParticlesAdd = 0;
+		nParticlesAlpha = 0;
 	}
 
 
@@ -330,8 +345,8 @@ namespace blib
 
 	EmitterTemplate::EmitterTemplate( std::string filename, TextureMap* textureMap, const std::string &textureFolder)
 	{
-		json::Value data = util::FileSystem::getJson(filename);
-		if(data.isNull())
+		json data = util::FileSystem::getJson(filename);
+		if(data.is_null())
 			throw "File not found";
 
 
@@ -339,11 +354,11 @@ namespace blib
 			std::pair<ParticleType, std::string>(Fading, "fading") );
 
 		
-		if(data["texture"].isString())
-			textures.push_back(data["texture"].asString());
+		if(data["texture"].is_string())
+			textures.push_back(data["texture"].get<std::string>());
 		else
 			for(size_t i = 0; i < data["texture"].size(); i++)
-				textures.push_back(data["texture"][i].asString());
+				textures.push_back(data["texture"][i].get<std::string>());
 
 		for(size_t i = 0; i < textures.size(); i++)
 			textureInfos.push_back(textureMap->addTexture(textureFolder + textures[i]));
@@ -351,57 +366,57 @@ namespace blib
 
 
 
-		textureOrder = enumFromString<TextureOrder>(data["textureorder"].asString(), util::make_vector<std::pair<TextureOrder, std::string> >() << 
+		textureOrder = enumFromString<TextureOrder>(data["textureorder"].get<std::string>(), util::make_vector<std::pair<TextureOrder, std::string> >() << 
 			std::pair<TextureOrder, std::string>(Random, "random")<<
 			std::pair<TextureOrder, std::string>(Ordered, "order"));
 
 
-		blendMode = enumFromString<BlendMode>(data["blendmode"].asString(), util::make_vector<std::pair<BlendMode, std::string> >() << 
+		blendMode = enumFromString<BlendMode>(data["blendmode"].get<std::string>(), util::make_vector<std::pair<BlendMode, std::string> >() << 
 			std::pair<BlendMode, std::string>(Alpha, "alpha")<<
 			std::pair<BlendMode, std::string>(Add, "add") );
 
-		shape = enumFromString<Shape>(data["shape"].asString(), util::make_vector<std::pair<Shape, std::string> >() << 
+		shape = enumFromString<Shape>(data["shape"].get<std::string>(), util::make_vector<std::pair<Shape, std::string> >() << 
 			std::pair<Shape, std::string>(Point, "point")<<
 			std::pair<Shape, std::string>(Line, "line")<<
 			std::pair<Shape, std::string>(Circle, "circle") );
 
-		gravity = glm::vec2(data["gravity"][0].asFloat(), data["gravity"][1].asFloat());
-		collision = data["collision"].asBool();
-		particleCountPerSecondMin = data["particlecount"][0].asInt();
+		gravity = glm::vec2(data["gravity"][0].get<float>(), data["gravity"][1].get<float>());
+		collision = data["collision"].get<bool>();
+		particleCountPerSecondMin = data["particlecount"][0].get<int>();
 
 
-		particleProps.directionMin = data["particle"]["direction"][0].asFloat();
-		particleProps.directionMax = data["particle"]["direction"][1].asFloat();
+		particleProps.directionMin = data["particle"]["direction"][0].get<float>();
+		particleProps.directionMax = data["particle"]["direction"][1].get<float>();
 
-		particleProps.speedMin = data["particle"]["speed"][0].asFloat();
-		particleProps.speedMax = data["particle"]["speed"][1].asFloat();
+		particleProps.speedMin = data["particle"]["speed"][0].get<float>();
+		particleProps.speedMax = data["particle"]["speed"][1].get<float>();
 
-		particleProps.rotationMin = data["particle"]["rotation"][0].asFloat();
-		particleProps.rotationMax = data["particle"]["rotation"][1].asFloat();
+		particleProps.rotationMin = data["particle"]["rotation"][0].get<float>();
+		particleProps.rotationMax = data["particle"]["rotation"][1].get<float>();
 
-		particleProps.rotationSpeedMin = data["particle"]["rotationspeed"][0].asFloat();
-		particleProps.rotationSpeedMax = data["particle"]["rotationspeed"][1].asFloat();
+		particleProps.rotationSpeedMin = data["particle"]["rotationspeed"][0].get<float>();
+		particleProps.rotationSpeedMax = data["particle"]["rotationspeed"][1].get<float>();
 
-		particleProps.friction = data["particle"]["friction"].asFloat();
-		particleProps.rotationFriction = data["particle"]["rotationfriction"].asFloat();
+		particleProps.friction = data["particle"]["friction"].get<float>();
+		particleProps.rotationFriction = data["particle"]["rotationfriction"].get<float>();
 
-		particleProps.fadeSpeedMin = data["particle"]["fadespeed"][0].asFloat();
-		particleProps.fadeSpeedMax = data["particle"]["fadespeed"][1].asFloat();
+		particleProps.fadeSpeedMin = data["particle"]["fadespeed"][0].get<float>();
+		particleProps.fadeSpeedMax = data["particle"]["fadespeed"][1].get<float>();
 
 	
-		particleProps.colorExp = data["particle"]["colorexp"].asFloat();
+		particleProps.colorExp = data["particle"]["colorexp"].get<float>();
 		for(size_t i = 0; i < data["particle"]["size"].size(); i++)
-			particleProps.size.push_back(data["particle"]["size"][i].asFloat());
+			particleProps.size.push_back(data["particle"]["size"][i].get<float>());
 
-		particleProps.sizeExp = data["particle"]["sizeexp"].asFloat();
+		particleProps.sizeExp = data["particle"]["sizeexp"].get<float>();
 		for(size_t i = 0; i < data["particle"]["colors"].size(); i++)
-			particleProps.colors.push_back(glm::vec4(data["particle"]["colors"][i][0].asFloat(), data["particle"]["colors"][i][1].asFloat(), data["particle"]["colors"][i][2].asFloat(), data["particle"]["colors"][i][3].asFloat()));
+			particleProps.colors.push_back(glm::vec4(data["particle"]["colors"][i][0].get<float>(), data["particle"]["colors"][i][1].get<float>(), data["particle"]["colors"][i][2].get<float>(), data["particle"]["colors"][i][3].get<float>()));
 
 		initialSpreadX = glm::vec2(0, 0);
 		initialSpreadY = glm::vec2(0, 0);
-		if (data.isMember("initialspread"))
+		if (data.find("initialspread") != data.end())
 		{
-			if (data["initialspread"][0].isArray())
+			if (data["initialspread"][0].is_array())
 			{
 				initialSpreadX = glm::vec2(data["initialspread"][0][0], data["initialspread"][0][1]);
 				initialSpreadY = glm::vec2(data["initialspread"][1][0], data["initialspread"][1][1]);
@@ -414,15 +429,23 @@ namespace blib
 		}
 
 	}
-	void ParticleSystem::resizeGl( int width, int height )
+	void ParticleSystem::resizeGl( int width, int height, int offsetX, int offsetY )
 	{
-		renderState.activeShader->setUniform(ShaderUniforms::projectionmatrix, glm::ortho(0.0f, (float)width, (float)height, 0.0f, -1000.0f, 1.0f));
+		renderState.activeShader->setUniform(ShaderUniforms::projectionmatrix, glm::ortho((float)offsetX, (float)width + offsetX, (float)height + offsetY, (float)offsetY, -1000.0f, 1.0f));
 	}
 
 	ParticleSystem::~ParticleSystem()
 	{
+		for (auto c : cache)
+			delete c.second;
+		for (auto e : emitters)
+			delete e;
+		delete[] particleData;
 		blib::ResourceManager::getInstance().dispose(textureMap);
-		//blib::ResourceManager::getInstance().dispose(shader);
+		blib::ResourceManager::getInstance().dispose(shader);
+		blib::ResourceManager::getInstance().dispose(vbo);
+		blib::ResourceManager::getInstance().dispose(vio);
+
 	}
 
 	void ParticleSystem::preCache(std::string dir)
