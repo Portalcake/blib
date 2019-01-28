@@ -69,14 +69,13 @@ namespace blib
 		}
 
 		resources[resource]++;
-        Log::out<<"Loading "<<(int)resource<<"\t"<<resource->name<<Log::newline;
 		return resource;
 	}
 
 
 	void ResourceManager::dispose(Resource* resource)
 	{
-		assert(resources.find(resource) != resources.end());
+		//assert(resources.find(resource) != resources.end());
 		resources[resource]--;
 		if (resources[resource] == 0)
 		{

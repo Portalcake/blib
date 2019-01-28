@@ -42,6 +42,7 @@ namespace blib
 		stb_vorbis_info info;
 		ALuint buffers[2];
 		ALenum format;
+		bool paused = false;
 		bool buffer(ALuint buffer);
 
 		//wav stuff
@@ -57,11 +58,15 @@ namespace blib
         int volume = 100;
 
 
+
 		~OpenALAudioSample();
 		virtual void play(bool loop) override;
 		virtual void stop() override;
 		virtual bool isPlaying() override;
 		virtual void setVolume(int volume) override;
+		virtual void pause();
+
+        virtual bool isPaused() { return this->paused; }
 
 		virtual bool update();
 
@@ -76,6 +81,7 @@ namespace blib
 		std::vector<OpenALAudioSample*> samples;
 		int lastSource = 0;
 		bool running;
+		bool alive = true;
 	public:
 		std::thread backgroundThread;
 		AudioManagerOpenAL();
@@ -93,5 +99,7 @@ namespace blib
 		virtual void stopAllSounds() override;
 
 		virtual void update() override; //TODO: move to background thread
+		virtual void sleep() override;
+		virtual void resume() override;
 	};
 }

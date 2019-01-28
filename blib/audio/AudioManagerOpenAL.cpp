@@ -2,9 +2,16 @@
 
 #include <blib/util/Thread.h>
 #include <blib/util/Log.h>
+
 #ifdef BLIB_IOS
 #include <OpenAL/alc.h>
+#endif
 
+#ifdef BLIB_ANDROID
+#include <al/alc.h>
+#endif
+
+#if defined(BLIB_IOS) || defined(BLIB_ANDROID)
 #define SUCCEEDED(hr) (((int)(hr)) >= 0)
 #include <unistd.h>
 #else
@@ -14,6 +21,10 @@
 #include <algorithm>
 
 
+#ifdef BLIB_ANDROID
+
+
+#endif
 
 using blib::util::Log;
 
@@ -26,7 +37,7 @@ namespace blib
             Log::out << " Error: " << error << Log::newline;
 
     }
-    
+
 	static void list_audio_devices(const ALCchar *devices)
 	{
 		const ALCchar *device = devices, *next = devices + 1;
@@ -137,7 +148,7 @@ namespace blib
 
     void AudioManagerOpenAL::playSound(std::string filename)
 	{
-		
+
 	}
 
 	AudioSample* AudioManagerOpenAL::loadSample(const std::string &filename)
@@ -199,7 +210,7 @@ namespace blib
 		checkError();
 		return newSample;
 	}
-	
+
 
 	OpenALAudioSample* AudioManagerOpenAL::loadSampleOgg(const std::string &filename)
 	{
@@ -207,7 +218,7 @@ namespace blib
 		char* data;
 		int len = blib::util::FileSystem::getData(filename, data);
 
-		stb_vorbis* stream = stb_vorbis_open_memory(const_cast<const unsigned char*>((unsigned char*)data), len, NULL, NULL); 
+		stb_vorbis* stream = stb_vorbis_open_memory(const_cast<const unsigned char*>((unsigned char*)data), len, NULL, NULL);
 		if (!stream)
 		{
 			Log::out << "AudioManagerOpenAL: Could not open " << filename << Log::newline;
@@ -245,7 +256,7 @@ namespace blib
 		//Uncomment this to avoid VLAs
 		//#define BUFFER_SIZE 4096*32
 #ifndef BUFFER_SIZE//VLAs ftw
-#define BUFFER_SIZE 4096*8
+#define BUFFER_SIZE 4096*64
 #endif
 		ALshort* pcm = new ALshort[BUFFER_SIZE];
 		int  size = 0;
@@ -336,7 +347,7 @@ namespace blib
 		this->looping = loop;
 
 		Log::out << "Playing " << this->fileName << " on source " << source->index << Log::newline;
-		
+
 		if (bufferId != 0) //wav
 		{
 			alSourcei(source->sourceId, AL_BUFFER, 0);
@@ -347,7 +358,6 @@ namespace blib
 			alSource3f(source->sourceId, AL_VELOCITY, 0, 0, 0);
 			alSourcei(source->sourceId, AL_LOOPING, loop);
 			alSourcePlay(source->sourceId);
-			checkError();
 		}
 		else //ogg
 		{
@@ -365,6 +375,7 @@ namespace blib
 			checkError();
 		}
 		playing = true;
+		checkError();
 		manager->mutex.unlock();
 	}
 
@@ -422,10 +433,8 @@ namespace blib
 		{
 			ALint processed = 0;
 			alGetSourcei(source->sourceId, AL_BUFFERS_PROCESSED, &processed);
-
 			while (processed--) {
 				ALuint buf = 0;
-				//Log::out << "AudioManager: chunk processed" << Log::newline;
 
 				alSourceUnqueueBuffers(source->sourceId, 1, &buf);
 				if(buf != 0)
@@ -449,11 +458,46 @@ namespace blib
 						}
 					}
 					alSourceQueueBuffers(source->sourceId, 1, &buf);
+					if(!isPlaying())
+						alSourcePlay(source->sourceId);
 				}
 			}
 
 		}
 		return true;
+	}
+
+	void OpenALAudioSample::pause() {
+		if(source) {
+		    if(!paused)
+                alSourcePause(source->sourceId);
+            else
+                alSourcePlay(source->sourceId);
+
+
+			paused = !paused;
+		}
+	}
+
+	void AudioManagerOpenAL::sleep() {
+		alive = false;
+
+        mutex.lock();
+        for (OpenALAudioSample* sample : samples)
+            sample->pause();
+        mutex.unlock();
+
+
+	}
+
+	void AudioManagerOpenAL::resume() {
+		alive = true;
+        mutex.lock();
+        for (OpenALAudioSample* sample : samples)
+            if(sample->isPaused())
+                sample->pause();
+        mutex.unlock();
+
 	}
 
 
@@ -466,6 +510,8 @@ namespace blib
 
 	void AudioManagerOpenAL::update()
 	{
+		if(!alive)
+			return;
 		mutex.lock();
 		for (OpenALAudioSample* sample : samples)
 			sample->update();
@@ -481,11 +527,11 @@ namespace blib
 			sample->stop();
 			mutex.lock();
 		}
-		
+
 		for(Source & source : sources)
 		{
 			alSourceStop(source.sourceId);
-			
+
 			ALint buffer = 0;
 			alGetSourcei(source.sourceId, AL_BUFFER, &buffer);
 			if(buffer > 0)

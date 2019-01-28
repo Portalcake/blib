@@ -10,6 +10,8 @@ using blib::util::Log;
 #include <vector>
 
 #include <blib/config.h>
+#include <locale>
+#include <codecvt>
 
 #if defined(BLIB_IOS)
 #include <OpenGLES/ES2/gl.h>
@@ -23,6 +25,15 @@ using blib::util::Log;
 #include <GL/wglew.h>
 #endif
 #endif
+
+#ifndef BLIB_IOS
+//#if (!_DLL) && (_MSC_VER >= 1900 /* VS 2015*/) && (_MSC_VER <= 1911 /* VS 2017 */)
+#if (!_DLL) && (_MSC_VER >= 1900 /* VS 2015*/)
+std::locale::id std::codecvt<char32_t, char, _Mbstatet>::id;
+#endif
+
+#endif
+
 
 namespace blib
 {
@@ -134,9 +145,50 @@ namespace blib
 
 
 	
-	float Font::textlen(const std::string &text) const
+	float Font::textlen(const std::string &utf8) const
 	{
-		float scale = 1;//0.00075f;
+#if defined(_DEBUG) && defined(BLIB_WIN)
+		std::wstring text;
+		std::wstring space;
+		typedef wchar_t ch;
+		typedef std::wstring str;
+
+		if (this->utf8)
+		{
+			text = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.from_bytes(utf8);
+			space = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.from_bytes(" ");
+		}
+		else
+		{
+			text = std::wstring(utf8.begin(), utf8.end());
+			for (int i = 0; i < utf8.size(); i++)
+				if (utf8[i] < 0)
+					text[i] = (unsigned char)text[i];
+			space = std::wstring(1, ' ');
+		}
+
+#else
+		std::u32string text;
+		std::u32string space;
+		typedef char32_t ch;
+		typedef std::u32string str;
+
+		if (this->utf8)
+		{
+			text = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>{}.from_bytes(utf8);
+			space = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>{}.from_bytes(" ");
+		}
+		else
+		{
+			text = std::u32string(utf8.begin(), utf8.end());
+			for (int i = 0; i < utf8.size(); i++)
+				if (utf8[i] < 0)
+					text[i] = (unsigned char)text[i];
+			space = std::u32string(1, ' ');
+		}
+#endif
+
+        float scale = 1;//0.00075f;
 
 		float posX = 0;
 

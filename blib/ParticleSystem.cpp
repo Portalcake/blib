@@ -22,8 +22,9 @@ using blib::util::Log;
 namespace blib
 {
 
-	ParticleSystem::ParticleSystem( Renderer* renderer, ResourceManager* resourceManager, SpriteBatch* spriteBatch, int textureSize )
+	ParticleSystem::ParticleSystem( Renderer* renderer, ResourceManager* resourceManager, SpriteBatch* spriteBatch, int textureSize , int maxParticles)
 	{
+        MAX_PARTICLES = maxParticles;
 		this->spriteBatch = spriteBatch;
 		this->renderer = renderer;
 		textureMap = resourceManager->getResource<TextureMap>(textureSize, textureSize);
@@ -58,6 +59,8 @@ namespace blib
 		lastElapsedTime = 0.1f;
 
 		particleData = new VertexDef[MAX_PARTICLES * 8];
+        alphaParticles = new Particle[MAX_PARTICLES];
+        addParticles = new Particle[MAX_PARTICLES];
 		for (int i = 0; i < MAX_PARTICLES; i++)
 		{
 			addParticles[i].vertex = particleData + (4 * i);
@@ -289,6 +292,15 @@ namespace blib
 		particle.position = position + blib::math::randomFloat() * (position - prevPosition) +
 			glm::vec2(blib::math::randomFloat(emitterTemplate->initialSpreadX.x, emitterTemplate->initialSpreadX.y), blib::math::randomFloat(emitterTemplate->initialSpreadY.x, emitterTemplate->initialSpreadY.y)) * blib::math::fromAngle(blib::math::randomFloat(0, blib::math::pif));
 		particle.prevPosition = particle.position -speed * blib::util::fromAngle(glm::radians(direction + blib::math::randomFloat(emitterTemplate->particleProps.directionMin, emitterTemplate->particleProps.directionMax)));
+
+		if (emitterTemplate->shape == EmitterTemplate::Shape::Circle)
+		{
+			glm::vec2 offset = blib::math::randomFloat() * 40 * blib::math::fromAngle(blib::math::randomFloat(blib::math::pif * 2));
+			particle.position += offset;
+			particle.prevPosition += offset;
+		}
+
+
 		particle.lifeDec = blib::math::randomFloat(emitterTemplate->particleProps.fadeSpeedMin, emitterTemplate->particleProps.fadeSpeedMax);
 		if(emitterTemplate->textureOrder == EmitterTemplate::Random)
 			particle.texture = emitterTemplate->textureInfos[rand()%emitterTemplate->textureInfos.size()];
@@ -441,6 +453,8 @@ namespace blib
 		for (auto e : emitters)
 			delete e;
 		delete[] particleData;
+        delete[] alphaParticles;
+        delete[] addParticles;
 		blib::ResourceManager::getInstance().dispose(textureMap);
 		blib::ResourceManager::getInstance().dispose(shader);
 		blib::ResourceManager::getInstance().dispose(vbo);
