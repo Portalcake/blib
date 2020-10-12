@@ -84,7 +84,7 @@ namespace blib
 
 		renderer->setVbo(vbo, vertices);
 
-		materialIndices.push_back(std::pair<const Texture*, unsigned short>(currentTexture, (unsigned short)vertices.size()));
+		materialIndices.push_back(std::pair<const Texture*, unsigned int>(currentTexture, (unsigned int)vertices.size()));
 		if (renderState.activeShader == shader)
 			renderState.activeShader->setUniform(Matrix, matrix);
 		int lastIndex = 0;
@@ -109,8 +109,8 @@ namespace blib
 		float fw = (float)src.width();
 		float fh = (float)src.height();
 
-		if(currentTexture != texture && currentTexture != NULL)
-			materialIndices.push_back(std::pair<const Texture*, unsigned short>(currentTexture, (unsigned short)vertices.size()));
+		if (currentTexture != texture && currentTexture != NULL)
+			materialIndices.push_back(std::pair<const Texture*, unsigned int>(currentTexture, (unsigned int)vertices.size()));
 		currentTexture = texture;
 
 		vertices.push_back(vertexDef(glm::vec2(transform * glm::vec4(fw*0 - center.x,						fh*0 - center.y,								0,1)),	glm::vec2(src.topleft.x,src.topleft.y), color, colorOverlay)); // 1
@@ -140,8 +140,8 @@ namespace blib
 		float fw = (float)1;
 		float fh = (float)1;
 
-		if(currentTexture != texture->texMap && currentTexture != NULL)
-			materialIndices.push_back(std::pair<const Texture*, unsigned short>(currentTexture, (unsigned short)vertices.size()));
+		if (currentTexture != texture->texMap && currentTexture != NULL)
+			materialIndices.push_back(std::pair<const Texture*, unsigned int>(currentTexture, (unsigned int)vertices.size()));
 		currentTexture = texture->texMap;
 
 		vertices.push_back(vertexDef(glm::vec2(transform * glm::vec4(fw*0 - center.x,						fh*0 - center.y,					0,1)),		glm::vec2(texture->t1.x,texture->t1.y), color, colorOverlay)); // 1
@@ -164,7 +164,7 @@ namespace blib
 		glm::vec2 tl = texture->t1 + rect.topleft * (texture->t2 - texture->t1 + 1.0f / glm::vec2(texture->texMap->width, texture->texMap->height));
 
 		if (currentTexture != texture->texMap && currentTexture != NULL)
-			materialIndices.push_back(std::pair<const Texture*, unsigned short>(currentTexture, (unsigned short)vertices.size()));
+			materialIndices.push_back(std::pair<const Texture*, unsigned int>(currentTexture, (unsigned int)vertices.size()));
 		currentTexture = texture->texMap;
 
 		vertices.push_back(vertexDef(glm::vec2(transform * glm::vec4(spriteSize.x * 0 - center.x,	spriteSize.y * 0 - center.y, 0, 1)),	glm::vec2(tl.x + texSize.x * 0,	tl.y + texSize.y * 0), color, colorOverlay)); // 1
@@ -242,7 +242,7 @@ namespace blib
 #endif
 		
 
-		if (maxWidth > 0)
+		if (maxWidth != 0)
 		{
 			float len = 0;
 			for (size_t i = 0; i < text.size(); i++)
@@ -252,9 +252,9 @@ namespace blib
 			}
 
 			len = (transform * glm::vec4(len, 0, 0, 1)).x - (transform * glm::vec4(0, 0, 0, 1)).x;
-			if (len > maxWidth)
+			if (len > glm::abs(maxWidth))
 			{
-				scaleFactor = maxWidth / len;
+				scaleFactor = glm::abs(maxWidth) / len;
 			}
 
 		}
@@ -291,6 +291,7 @@ namespace blib
 				x = 0;
 				y += lineHeight;
 				lineHeight = 12;
+				continue;
 			}
 			if (c == '\t')
 			{
@@ -298,11 +299,19 @@ namespace blib
 				continue;
 			}
 
-			if(font->charmap.find(c) == font->charmap.end())
+			if (font->charmap.find(c) == font->charmap.end())
+			{
+				if(c != 0)
+					Log::out << "Could not find character " << c << Log::newline;
 				continue;
+			}
 			const Glyph* g = font->getGlyph(c);
-			lineHeight = glm::max(lineHeight, g->height + g->yoffset);
-			draw(font->texture, glm::translate(glm::scale(transform, glm::vec3(scaleFactor, scaleFactor, 1)), glm::vec3(x+g->xoffset,y+g->yoffset,0)), glm::vec2(0,0), blib::math::Rectangle(g->x*texFactor.x,g->y*texFactor.y,g->width*texFactor.x,g->height*texFactor.y), color);
+			lineHeight = glm::max(lineHeight, (int)font->lineHeight);
+
+			if(maxWidth >= 0)
+				draw(font->texture, glm::translate(glm::scale(transform, glm::vec3(scaleFactor, scaleFactor, 1)), glm::vec3(x+g->xoffset,y+g->yoffset-font->lineHeight,0)), glm::vec2(0,0), blib::math::Rectangle(g->x*texFactor.x,g->y*texFactor.y,g->width*texFactor.x,g->height*texFactor.y), color);
+			else
+				draw(font->texture, glm::translate(glm::scale(transform, glm::vec3(scaleFactor, scaleFactor, 1)), glm::vec3(x + g->xoffset, y + g->yoffset - font->lineHeight*0.5, 0)), glm::vec2(0, 0), blib::math::Rectangle(g->x*texFactor.x, g->y*texFactor.y, g->width*texFactor.x, g->height*texFactor.y), color);
 
 			x+=g->xadvance;
 		}
@@ -313,7 +322,7 @@ namespace blib
 	void SpriteBatch::draw(const Texture* texture, const glm::mat4 &transform, const std::vector<std::pair<glm::vec2, glm::vec2>> &coords, const glm::vec4 &color /*= glm::vec4(1,1,1,1)*/, const glm::vec4 &colorOverlay)
 	{
 		if (currentTexture != texture && currentTexture != NULL)
-			materialIndices.push_back(std::pair<const Texture*, unsigned short>(currentTexture, (unsigned short)vertices.size()));
+			materialIndices.push_back(std::pair<const Texture*, unsigned int>(currentTexture, (unsigned int)vertices.size()));
 		currentTexture = texture;
 
 		for (const std::pair<glm::vec2, glm::vec2> &coord : coords)
@@ -323,7 +332,7 @@ namespace blib
 	void SpriteBatch::draw(const Texture* texture, const std::vector<std::pair<glm::vec2, glm::vec2>> &coords, const glm::vec4 &color /*= glm::vec4(1,1,1,1)*/, const glm::vec4 &colorOverlay)
 	{
 		if (currentTexture != texture && currentTexture != NULL)
-			materialIndices.push_back(std::pair<const Texture*, unsigned short>(currentTexture, (unsigned short)vertices.size()));
+			materialIndices.push_back(std::pair<const Texture*, unsigned int>(currentTexture, (unsigned int)vertices.size()));
 		currentTexture = texture;
 
 		for (const std::pair<glm::vec2, glm::vec2> &coord : coords)
@@ -334,7 +343,7 @@ namespace blib
 	void SpriteBatch::draw(const Texture* texture, const glm::mat4 &transform, const std::vector<std::tuple<glm::vec2, glm::vec2, glm::vec4>> &coords)
 	{
 		if (currentTexture != texture && currentTexture != NULL)
-			materialIndices.push_back(std::pair<const Texture*, unsigned short>(currentTexture, (unsigned short)vertices.size()));
+			materialIndices.push_back(std::pair<const Texture*, unsigned int>(currentTexture, (unsigned int)vertices.size()));
 		currentTexture = texture;
 
 		for (const std::tuple<glm::vec2, glm::vec2, glm::vec4> &coord : coords)
@@ -401,21 +410,21 @@ namespace blib
 		cache->verts.insert(cache->verts.begin(), vertices.begin() + cacheStart, vertices.end());
 		cache->materialIndices = materialIndices;
 
-		std::pair<const Texture*, unsigned short> p(currentTexture, (unsigned short)vertices.size());
+		std::pair<const Texture*, unsigned int> p(currentTexture, (unsigned int)vertices.size());
 		cache->materialIndices.push_back(p);
 
 		while (!cache->materialIndices.empty() && cache->materialIndices[0].second < cacheStart)
 			cache->materialIndices.erase(cache->materialIndices.begin());
 		
 		for (size_t i = 0; i < cache->materialIndices.size(); i++)
-			cache->materialIndices[i].second -= (unsigned short)cacheStart;
+			cache->materialIndices[i].second -= (unsigned int)cacheStart;
 
 		if (removeFromRenderQueue)
 		{
 			vertices.resize(cacheStart);
 			materialIndices.erase(std::remove_if(materialIndices.begin(),
 				materialIndices.end(),
-				[this](const std::pair<const Texture*, unsigned short> &x) {return x.second > cacheStart; }),
+				[this](const std::pair<const Texture*, unsigned int> &x) {return x.second > cacheStart; }),
 				materialIndices.end());
 		}
 
@@ -436,7 +445,7 @@ namespace blib
 
 
 		if(currentTexture != cache->materialIndices[0].first && currentTexture != NULL)
-			materialIndices.push_back(std::pair<const Texture*, unsigned short>(currentTexture, (unsigned short)currentSize));
+			materialIndices.push_back(std::pair<const Texture*, unsigned int>(currentTexture, (unsigned int)currentSize));
 		currentTexture = cache->materialIndices[0].first;
 
 
@@ -446,7 +455,7 @@ namespace blib
 			if(cache->materialIndices[i].second < 0)
 				throw "argh";
 			materialIndices.push_back(cache->materialIndices[i]);
-			materialIndices[materialIndices.size()-1].second += (unsigned short)currentSize;
+			materialIndices[materialIndices.size()-1].second += (unsigned int)currentSize;
 		}
 		currentTexture = cache->materialIndices[cache->materialIndices.size()-1].first;
 
